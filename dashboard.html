@@ -144,6 +144,45 @@
   .di .body b:first-child{margin-top:0}
   .foot{margin-top:22px; font-size:11.5px; color:var(--muted); line-height:1.7}
 
+  /* 대분류 칩 (셀렉트박스 대체) */
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer;
+        border:1px solid var(--ring);background:var(--surface);color:var(--ink2);white-space:nowrap;
+        display:inline-flex;align-items:center;gap:6px;transition:background .1s,border-color .1s}
+  .chip:hover{background:var(--chip);color:var(--ink)}
+  .chip .k{font-size:10.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+  .chip.on .k{color:var(--surface);opacity:.7}
+  .chiplabel{font-size:11.5px;color:var(--muted);font-weight:650;margin-right:2px}
+  .chipwrap{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;width:100%;
+            padding:10px 0 2px;border-top:1px solid var(--grid);margin-top:10px}
+  /* tabs count + routine */
+  .tabcnt{display:inline-block;min-width:17px;padding:0 5px;margin-left:4px;border-radius:999px;
+          background:var(--s-crit);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;vertical-align:1px}
+  .tabcnt:empty{display:none}
+  .rgrp{margin-top:22px}
+  .rgrp:first-child{margin-top:0}
+  .rgrp h3{font-size:12.5px;font-weight:650;margin:0 0 10px;display:flex;align-items:center;gap:7px}
+  .rgrp h3 .c{color:var(--muted);font-weight:600;font-size:11.5px}
+  .rlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:9px}
+  .rcard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;
+         border:1px solid var(--ring);border-radius:11px;padding:11px 12px;background:var(--surface);cursor:pointer}
+  .rcard:hover{border-color:var(--h-blue)}
+  .rcard .tt{font-size:12.5px;font-weight:600;line-height:1.4;word-break:keep-all}
+  .rcard .mt{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .rcard .dd{text-align:right;flex:none}
+  .rchip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;display:inline-block}
+  .rstrip{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:5px}
+  @media (max-width:900px){ .rstrip{grid-template-columns:repeat(7,minmax(0,1fr))} }
+  .rday{border:1px solid var(--ring);border-radius:9px;padding:7px 4px 8px;text-align:center;background:var(--surface)}
+  .rday.we{background:var(--chip)}
+  .rday.today{border-color:var(--h-blue);box-shadow:inset 0 -2px 0 var(--h-blue)}
+  .rday .wd{font-size:9.5px;color:var(--muted);font-weight:650;letter-spacing:.02em}
+  .rday .dt{font-size:11px;color:var(--ink2);font-variant-numeric:tabular-nums;margin-top:1px}
+  .rday .cn{margin:6px auto 0;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;
+            font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .rday .cn.z{color:var(--muted);font-weight:500;background:transparent}
+  .cyc{font-size:10px;font-weight:650;padding:2px 6px;border-radius:5px;background:var(--chip);color:var(--ink2);white-space:nowrap}
   /* board */
   .bbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
   .bstat{display:flex; gap:14px; flex-wrap:wrap; margin-left:auto; font-size:12px; color:var(--ink2)}
@@ -225,6 +264,7 @@
 
 <nav class="tabs" role="tablist">
   <button id="tabBoard" role="tab" aria-selected="true">보드</button>
+  <button id="tabRoutine" role="tab" aria-selected="false">루틴 <span id="tabRoutineN" class="tabcnt"></span></button>
   <button id="tabCal" role="tab" aria-selected="false">캘린더</button>
   <button id="tabDash" role="tab" aria-selected="false">요약 · 표</button>
 </nav>
@@ -237,13 +277,15 @@
         <option value="status">열 기준: 상태</option>
         <option value="group">열 기준: 5단계 묶음</option>
         <option value="cat">열 기준: 요청 분류</option>
+        <option value="routine">열 기준: 루틴 / 단발</option>
       </select>
-      <select id="bCat"><option value="">분류 전체</option></select>
+      <select id="bCat" class="hidden"><option value="">분류 전체</option></select>
       <input type="search" id="bQ" placeholder="태스크 · 내용 검색">
       <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer">
         <input type="checkbox" id="bStale" style="cursor:pointer"> 14일+ 무소식만
       </label>
       <div class="bstat" id="bStat"></div>
+      <div class="chipwrap"><span class="chiplabel">대분류</span><div class="chips" id="bCatChips"></div></div>
     </div>
     <div class="board" id="board"></div>
   </div>
@@ -309,12 +351,13 @@
   <h2>전체 태스크</h2>
   <p class="note">행을 클릭하면 상세 내용 · 진행 현황 원문이 펼쳐집니다.</p>
   <div class="filters">
-    <select id="fCat"><option value="">분류 전체</option></select>
+    <select id="fCat" class="hidden"><option value="">분류 전체</option></select>
     <select id="fStatus"><option value="">상태 전체</option></select>
     <select id="fPrio"><option value="">우선순위 전체</option></select>
     <select id="fRisk"><option value="">처리예정일자 전체</option><option value="over">경과</option><option value="soon">임박(7일)</option><option value="ok">여유</option><option value="done">종결</option><option value="none">미입력</option></select>
     <input type="search" id="fQ" placeholder="태스크 · 내용 · 담당 검색">
     <span class="count" id="tCount"></span>
+    <div class="chipwrap"><span class="chiplabel">대분류</span><div class="chips" id="fCatChips"></div></div>
   </div>
   <div class="tblwrap">
     <table>
@@ -333,6 +376,28 @@
 </div>
 </section>
 
+<!-- ============ 루틴 ============ -->
+<section id="viewRoutine" class="hidden">
+  <div class="grid tiles mb" id="rTiles"></div>
+
+  <div class="card mb">
+    <h2>다음 14일 루틴 부하</h2>
+    <p class="note">각 루틴의 반복 주기를 펼쳐 날짜별 건수를 계산했습니다. 칸에 마우스를 올리면 그 날 할 일이 보입니다.</p>
+    <div class="rstrip" id="rLoad"></div>
+  </div>
+
+  <div class="card" id="rGroups"></div>
+
+  <div class="foot" style="margin-top:18px">
+    <div><strong>루틴 인식 방법</strong> — 시트 <strong>M열(반복 주기)</strong> 에 값이 있으면 루틴 업무로 봅니다.
+      <code>매일</code> · <code>매주 월</code> · <code>매주 화,금</code> · <code>매월 5일</code> · <code>매월 말일</code> ·
+      <code>매분기</code> · <code>매년 3/1</code> · <code>10일마다</code> 형식을 인식합니다.</div>
+    <div><strong>다음 예정일</strong> — <strong>N열(최근 수행일)</strong> 에 주기를 더해 자동 계산합니다.
+      별도의 예정일 열을 두지 않아 두 값이 어긋날 일이 없습니다. N열이 비어 있으면 <strong>미실행</strong>으로 표시합니다.</div>
+    <div><strong>운영 방법</strong> — 루틴을 한 번 처리할 때마다 N열 날짜만 오늘로 바꿔 주세요. 다음 예정일이 자동으로 밀립니다.</div>
+  </div>
+</section>
+
 <!-- ============ 캘린더 ============ -->
 <section id="viewCal" class="hidden">
   <div class="card mb">
@@ -346,6 +411,7 @@
         <option value="doneDate">처리일자</option>
         <option value="reqD">요청 일자</option>
         <option value="stamps">진행 현황 업데이트 기록</option>
+        <option value="routine">루틴 반복 일정</option>
       </select>
       <select id="calStatus"><option value="">상태 전체</option></select>
       <span class="count" id="calCount"></span>
@@ -379,82 +445,92 @@ const SNAPSHOT_DATE = "데모";
 const SNAPSHOT = [
 {
 "cat": "웹사이트 리뉴얼",
-"id": "",
+"id": "W-01",
 "req": "김하늘",
-"reqDate": "2026. 7. 2",
+"reqDate": "T-50",
 "task": "메인 페이지 개편",
 "detail": "- 히어로 영역 시안 3종 검토\n- 모바일 우선 레이아웃 적용",
 "prio": "상",
 "status": "진행 중",
-"due": "2026. 8. 28",
+"due": "T+7",
 "done": "",
-"progress": "[8/12] 1차 시안 공유\n[8/18] 피드백 반영본 전달(디자인팀)",
+"progress": "[T-9] 1차 시안 공유\n[T-3] 피드백 반영본 전달(디자인팀)",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 1
 },
 {
 "cat": "웹사이트 리뉴얼",
-"id": "",
+"id": "W-02",
 "req": "김하늘",
-"reqDate": "",
+"reqDate": "T-44",
 "task": "접근성 점검",
-"detail": "WCAG AA 기준 대비비 검수 필요",
+"detail": "WCAG AA 기준 명도 대비 검수 필요",
 "prio": "곧",
 "status": "확인 요청",
-"due": "2026. 8. 26",
+"due": "T+5",
 "done": "",
-"progress": "[8/17] 점검 도구 선정 완료",
+"progress": "[T-4] 점검 도구 선정 완료",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 2
 },
 {
 "cat": "웹사이트 리뉴얼",
-"id": "",
+"id": "W-03",
 "req": "",
 "reqDate": "",
 "task": "다국어 리소스 정리",
 "detail": "",
 "prio": "하",
 "status": "시작 전",
-"due": "2026. 9. 10",
+"due": "T+20",
 "done": "",
 "progress": "",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 3
 },
 {
 "cat": "채용",
-"id": "",
+"id": "R-01",
 "req": "박서준",
-"reqDate": "2026. 7. 15",
+"reqDate": "T-37",
 "task": "공고문 최종 검토",
 "detail": "직무기술서 문구 확정 필요",
 "prio": "상",
 "status": "협의 필요",
-"due": "2026. 8. 24",
+"due": "T+3",
 "done": "",
-"progress": "[8/14] 초안 회신\n[8/19] 부서 의견 취합 중",
+"progress": "[T-7] 초안 회신\n[T-2] 부서 의견 취합 중",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 4
 },
 {
 "cat": "채용",
-"id": "",
+"id": "R-02",
 "req": "박서준",
 "reqDate": "",
 "task": "면접 일정 조율",
 "detail": "",
 "prio": "",
 "status": "진행 중",
-"due": "2026. 8. 25",
+"due": "T+4",
 "done": "",
-"progress": "[8/20] 후보자 3명 일정 확정",
+"progress": "[T-1] 후보자 3명 일정 확정",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 5
 },
 {
 "cat": "운영",
-"id": "",
+"id": "O-01",
 "req": "이도윤",
 "reqDate": "",
 "task": "월간 리포트 자동화",
@@ -463,28 +539,32 @@ const SNAPSHOT = [
 "status": "잠시 중단",
 "due": "",
 "done": "",
-"progress": "[7/28] 요구사항 정리\n[8/3] 우선순위 조정으로 보류",
+"progress": "[T-24] 요구사항 정리\n[T-18] 우선순위 조정으로 보류",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 6
 },
 {
 "cat": "운영",
-"id": "",
+"id": "O-02",
 "req": "이도윤",
 "reqDate": "",
 "task": "서버 정기 점검",
 "detail": "",
 "prio": "하",
 "status": "완료",
-"due": "2026. 8. 10",
-"done": "2026. 8. 10",
-"progress": "[8/10] 점검 완료, 이상 없음",
-"feedback": "",
+"due": "T-11",
+"done": "T-11",
+"progress": "[T-11] 점검 완료, 이상 없음",
+"feedback": "다음 점검 다음 달",
+"cycle": "",
+"lastRun": "",
 "no": 7
 },
 {
 "cat": "운영",
-"id": "",
+"id": "O-03",
 "req": "",
 "reqDate": "",
 "task": "백업 정책 문서화",
@@ -495,26 +575,30 @@ const SNAPSHOT = [
 "done": "",
 "progress": "",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 8
 },
 {
 "cat": "예산",
-"id": "",
+"id": "B-01",
 "req": "최지우",
 "reqDate": "",
 "task": "3분기 정산",
 "detail": "증빙 누락 건 확인 필요",
 "prio": "상",
 "status": "확인 필요",
-"due": "2026. 8. 22",
+"due": "T+1",
 "done": "",
-"progress": "[8/6] 1차 취합\n[8/19] 누락 2건 재요청",
+"progress": "[T-15] 1차 취합\n[T-2] 누락 2건 재요청",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 9
 },
 {
 "cat": "예산",
-"id": "",
+"id": "B-02",
 "req": "최지우",
 "reqDate": "",
 "task": "예비비 집행 계획",
@@ -523,8 +607,10 @@ const SNAPSHOT = [
 "status": "이전",
 "due": "",
 "done": "",
-"progress": "[7/22] 차기 회의로 이전",
+"progress": "[T-30] 차기 회의로 이전",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 10
 },
 {
@@ -536,10 +622,12 @@ const SNAPSHOT = [
 "detail": "신규 입사자용 온보딩 자료",
 "prio": "",
 "status": "",
-"due": "2026. 9. 1",
+"due": "T+11",
 "done": "",
 "progress": "",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 11
 },
 {
@@ -553,13 +641,118 @@ const SNAPSHOT = [
 "status": "중단",
 "due": "",
 "done": "",
-"progress": "[8/5] 별도 과제로 통합되어 중단",
+"progress": "[T-16] 별도 과제로 통합되어 중단",
 "feedback": "",
+"cycle": "",
+"lastRun": "",
 "no": 12
+},
+{
+"cat": "운영",
+"id": "L-01",
+"req": "이도윤",
+"reqDate": "",
+"task": "일일 지표 점검",
+"detail": "가입·이탈·오류율 3종 확인 후 채널 공유",
+"prio": "상",
+"status": "진행 중",
+"due": "",
+"done": "",
+"progress": "[T-1] 이상 없음",
+"feedback": "",
+"cycle": "매일",
+"lastRun": "T-1",
+"no": 13
+},
+{
+"cat": "운영",
+"id": "L-02",
+"req": "이도윤",
+"reqDate": "",
+"task": "서버 로그 확인",
+"detail": "에러 로그 확인 후 이슈 등록",
+"prio": "곧",
+"status": "진행 중",
+"due": "",
+"done": "",
+"progress": "[T-5] 확인 완료",
+"feedback": "",
+"cycle": "매일",
+"lastRun": "T-5",
+"no": 14
+},
+{
+"cat": "운영",
+"id": "L-03",
+"req": "김하늘",
+"reqDate": "",
+"task": "주간 업무 보고",
+"detail": "팀 주간 보고서 작성 및 발송",
+"prio": "상",
+"status": "진행 중",
+"due": "",
+"done": "",
+"progress": "[T-11] 발송 완료",
+"feedback": "",
+"cycle": "매주 월",
+"lastRun": "T-11",
+"no": 15
+},
+{
+"cat": "운영",
+"id": "L-04",
+"req": "",
+"reqDate": "",
+"task": "백업 상태 점검",
+"detail": "백업 성공 여부 및 용량 확인",
+"prio": "하",
+"status": "시작 전",
+"due": "",
+"done": "",
+"progress": "",
+"feedback": "",
+"cycle": "10일마다",
+"lastRun": "T-6",
+"no": 16
+},
+{
+"cat": "예산",
+"id": "L-05",
+"req": "최지우",
+"reqDate": "",
+"task": "분기 보안 점검",
+"detail": "점검표 작성 후 보안팀 제출",
+"prio": "곧",
+"status": "시작 전",
+"due": "",
+"done": "",
+"progress": "[T-30] 3분기 점검 완료",
+"feedback": "",
+"cycle": "매분기",
+"lastRun": "T-30",
+"no": 17
+},
+{
+"cat": "",
+"id": "L-06",
+"req": "",
+"reqDate": "",
+"task": "정보보호 교육 이수",
+"detail": "전 직원 연 1회 필수 교육",
+"prio": "하",
+"status": "시작 전",
+"due": "",
+"done": "",
+"progress": "",
+"feedback": "",
+"cycle": "매년 3/1",
+"lastRun": "",
+"no": 18
 }
 ];
 
-const COLS = ["cat","id","req","reqDate","task","detail","prio","status","due","done","progress","feedback"];
+const COLS = ["cat","id","req","reqDate","task","detail","prio","status","due","done","progress","feedback",
+             "cycle","lastRun"];   /* M: 반복 주기, N: 최근 수행일 — 없는 시트도 그대로 동작 */
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
 /* ---------- 상태 레지스트리 (시트 값에 맞춰 동적 확장) ---------- */
@@ -674,6 +867,79 @@ function updateStamps(text){
   return out;
 }
 
+/* ---------- 반복 주기 (루틴 업무) ---------- */
+/* 표기 예: 매일 · 매주 월 · 매주 화,금 · 매월 5일 · 매월 말일 · 매분기 · 매년 3/1 · 10일마다 */
+const WD = ["일","월","화","수","목","금","토"];
+function parseCycle(str){
+  const s = (str || "").trim();
+  if(!s) return null;
+  let m;
+  if(/^매일/.test(s)) return {kind:"day", n:1, label:s, short:"매일"};
+  if((m = s.match(/^(\d+)\s*일\s*마다/))) return {kind:"day", n:Math.max(1,+m[1]), label:s, short:s};
+  if((m = s.match(/^(\d+)\s*주\s*마다/))) return {kind:"day", n:Math.max(1,+m[1])*7, label:s, short:s};
+  if(/^매주/.test(s)){
+    const days = (s.match(/[일월화수목금토]/g) || []).map(d => WD.indexOf(d)).filter(i => i >= 0);
+    return {kind:"week", days: days.length ? days : [1], label:s, short:"매주"};
+  }
+  if(/^매월|^월간/.test(s)){
+    if(/말일/.test(s)) return {kind:"month", day:"last", label:s, short:"매월"};
+    m = s.match(/(\d{1,2})\s*일/);
+    return {kind:"month", day: m ? Math.min(31, Math.max(1, +m[1])) : 1, label:s, short:"매월"};
+  }
+  if(/^매분기|^분기/.test(s)) return {kind:"quarter", label:s, short:"매분기"};
+  if(/^매년|^연간/.test(s)){
+    m = s.match(/(\d{1,2})\s*[\/월]\s*(\d{1,2})/);
+    return {kind:"year", mo: m ? +m[1] : 1, day: m ? +m[2] : 1, label:s, short:"매년"};
+  }
+  return {kind:"free", label:s, short:s};      /* 인식 못한 표기도 루틴으로는 인정 */
+}
+const CYCLE_ORDER = ["매일","매주","매월","매분기","매년"];
+function eom(y,m){ return new Date(y, m+1, 0).getDate(); }
+/* from 이후 가장 이른 발생일 (from 당일은 제외) */
+function nextAfter(c, from){
+  if(!c || c.kind === "free") return null;
+  const d = new Date(from); d.setHours(0,0,0,0);
+  if(c.kind === "day"){ const x = new Date(d); x.setDate(d.getDate() + (c.n || 1)); return x; }
+  if(c.kind === "week"){
+    for(let i = 1; i <= 14; i++){
+      const x = new Date(d); x.setDate(d.getDate() + i);
+      if(c.days.indexOf(x.getDay()) >= 0) return x;
+    }
+    return null;
+  }
+  if(c.kind === "month"){
+    const at = (y,m) => new Date(y, m, c.day === "last" ? eom(y,m) : Math.min(c.day, eom(y,m)));
+    let cand = at(d.getFullYear(), d.getMonth());
+    if(cand <= d) cand = at(d.getFullYear(), d.getMonth() + 1);
+    cand.setHours(0,0,0,0); return cand;
+  }
+  if(c.kind === "quarter"){ const x = new Date(d); x.setMonth(x.getMonth() + 3); return x; }
+  if(c.kind === "year"){
+    let y = d.getFullYear();
+    let cand = new Date(y, c.mo - 1, Math.min(c.day, eom(y, c.mo - 1)));
+    if(cand <= d) cand = new Date(y + 1, c.mo - 1, Math.min(c.day, eom(y + 1, c.mo - 1)));
+    cand.setHours(0,0,0,0); return cand;
+  }
+  return null;
+}
+/* 기간 [a,b] 안의 발생일 전부 */
+function occurrences(c, seed, a, b){
+  if(!c || c.kind === "free") return [];
+  const out = []; let cur = new Date(seed); let guard = 0;
+  while(guard++ < 800){
+    const nx = nextAfter(c, cur);
+    if(!nx || nx > b) break;
+    if(nx >= a) out.push(nx);
+    cur = nx;
+    if(out.length > 40) break;
+  }
+  return out;
+}
+/* 루틴 상태: 미실행 / 지연 / 오늘 / 이번 주 / 예정 */
+const RBUCKETS = [["지연","late","var(--s-crit)","!"],["오늘","today","var(--s-serious)","●"],
+                  ["이번 주","soon","var(--h-blue)","▶"],["예정","later","var(--s-gray)","○"],
+                  ["미실행","never","var(--s-none)","—"]];
+
 /* ---------- 정규화 ---------- */
 function normalize(rows){
   return rows.map((r,i) => {
@@ -690,6 +956,21 @@ function normalize(rows){
     o.deadline = parseDateCell(o.due);
     o.doneDate = parseDateCell(o.done);
     o.reqD = parseDateCell(o.reqDate);
+    /* 루틴 업무 */
+    o.cyc = parseCycle(o.cycle);
+    o.isRoutine = !!o.cyc;
+    o.lastRunD = parseDateCell(o.lastRun);
+    o.nextDue = null; o.rBucket = null; o.rDays = null;
+    if(o.isRoutine){
+      if(!o.lastRunD){ o.rBucket = "never"; }
+      else {
+        o.nextDue = nextAfter(o.cyc, o.lastRunD);
+        if(o.nextDue){
+          o.rDays = daysBetween(TODAY, o.nextDue);
+          o.rBucket = o.rDays < 0 ? "late" : o.rDays === 0 ? "today" : o.rDays <= 7 ? "soon" : "later";
+        } else { o.rBucket = "later"; }
+      }
+    }
     const closed = o.group === "완료" || o.group === "중단" || !!o.done;
     if(o.deadline && !closed){
       const diff = daysBetween(TODAY, o.deadline);
@@ -886,6 +1167,28 @@ function renderTable(){
 ["fCat","fStatus","fPrio","fRisk"].forEach(id => document.getElementById(id).addEventListener("change", renderTable));
 document.getElementById("fQ").addEventListener("input", renderTable);
 
+/* ---------- 대분류 칩 (셀렉트박스 대체) ---------- */
+/* 숨긴 select 를 그대로 상태 저장소로 쓰고, 칩이 값을 바꾼 뒤 change 를 발생시킨다.
+   기존 필터 로직을 건드리지 않으면서 UI만 교체하는 방식. */
+function renderCatChips(chipsId, selectId, onPick){
+  const box = document.getElementById(chipsId), sel = document.getElementById(selectId);
+  if(!box || !sel) return;
+  const counts = {};
+  ROWS.forEach(r => { counts[r.catL] = (counts[r.catL] || 0) + 1; });
+  const cats = Object.keys(counts).sort((a,b) => counts[b] - counts[a] || a.localeCompare(b,"ko"));
+  const cur = sel.value;
+  box.innerHTML = [["", "전체", ROWS.length]]
+    .concat(cats.map(c => [c, c, counts[c]]))
+    .map(([v, label, n]) =>
+      `<button type="button" class="chip${cur === v ? " on" : ""}" data-v="${esc(v)}"
+        aria-pressed="${cur === v}">${esc(label)}<span class="k">${n}</span></button>`).join("");
+  box.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
+    sel.value = btn.dataset.v;
+    renderCatChips(chipsId, selectId, onPick);
+    onPick();
+  }));
+}
+
 /* ---------- 보드 (워킹 화면) ---------- */
 const BOARD = {by:"status", cat:"", q:"", stale:false};
 const staleDays = r => r.lastUpdate ? daysBetween(r.lastUpdate, TODAY) : null;
@@ -910,6 +1213,11 @@ function renderBoard(){
   else if(BOARD.by === "group")
     cols = GROUP_SEQ.map(g => g[0]).filter(g => ROWS.some(r => r.group === g))
       .map(g => ({k:g, c:GROUP_COLOR[g], i:GROUP_ICON[g], rs:rows.filter(r => r.group === g)}));
+  else if(BOARD.by === "routine")
+    cols = RBUCKETS.map(([label,k,c,i]) => ({k:"루틴 · " + label, c, i,
+             rs: rows.filter(r => r.isRoutine && r.rBucket === k)}))
+           .concat([{k:"단발 업무", c:"var(--s-gray)", i:"○", rs: rows.filter(r => !r.isRoutine)}])
+           .filter(x => x.rs.length);
   else
     cols = [...new Set(ROWS.map(r => r.catL))]
       .map(c => ({k:c, c:"var(--h-blue)", i:"▣", rs:rows.filter(r => r.catL === c)}))
@@ -923,6 +1231,10 @@ function renderBoard(){
     `<span style="color:var(--h-blue)">최근 7일 업데이트 <b>${upToday}</b></span>` +
     `<span style="color:var(--s-serious)">14일+ 무소식 <b>${stale}</b></span>` +
     `<span style="color:var(--muted)">기록 없음 <b>${norec}</b></span>`;
+
+  /* 필터가 걸린 동안에는 빈 열을 감춘다 (전체 보기일 때는 상태 축 전체를 유지) */
+  const filtered = !!(BOARD.cat || BOARD.q.trim() || BOARD.stale);
+  if(filtered) cols = cols.filter(c => c.rs.length);
 
   document.getElementById("board").innerHTML = cols.map(col => {
     const rs = col.rs.slice().sort((a,b) => (b.lastUpdate?+b.lastUpdate:0) - (a.lastUpdate?+a.lastUpdate:0));
@@ -941,6 +1253,13 @@ function renderBoard(){
           ${BOARD.by !== "cat" ? `<span class="bdg">${esc(r.catL)}</span>` : ""}
           ${r.prioL !== "미지정" ? `<span class="bdg pri">우선 ${esc(r.prioL)}</span>` : ""}
           ${r.deadline ? `<span class="bdg">예정 ${md(r.deadline)}</span>` : ""}
+          ${r.isRoutine ? `<span class="bdg" style="background:${
+              r.rBucket === "late" ? "var(--s-crit);color:#fff" :
+              r.rBucket === "today" ? "var(--s-serious);color:#0b0b0b" : "var(--chip)"
+            };font-weight:650">↻ ${esc(r.cyc.short)}${
+              r.rBucket === "late" ? " " + Math.abs(r.rDays) + "일 지연" :
+              r.rBucket === "today" ? " 오늘" :
+              r.nextDue ? " " + md(r.nextDue) : " 미실행"}</span>` : ""}
         </div></article>`;
     }).join("");
     return `<div class="col">
@@ -959,7 +1278,11 @@ function openDrawer(no){
   const kv = [["분류", r.catL], ["상태", `${r.m.i} ${r.statusL}`], ["우선순위", r.prioL === "미지정" ? "—" : r.prioL],
               ["요청자/구분", r.req || "—"], ["요청 일자", r.reqDate || "—"],
               ["처리예정일자", r.due || "미입력"], ["처리일자", r.done || "—"],
-              ["최근 업데이트", r.lastUpdate ? `${md(r.lastUpdate)} (${sd === 0 ? "오늘" : sd + "일 전"})` : "기록 없음"]];
+              ["최근 업데이트", r.lastUpdate ? `${md(r.lastUpdate)} (${sd === 0 ? "오늘" : sd + "일 전"})` : "기록 없음"]]
+             .concat(r.isRoutine ? [["반복 주기", "↻ " + r.cyc.label],
+               ["최근 수행일", r.lastRunD ? md(r.lastRunD) : "미실행"],
+               ["다음 예정일", r.nextDue ? md(r.nextDue) + (r.rDays < 0 ? ` (${Math.abs(r.rDays)}일 지연)`
+                 : r.rDays === 0 ? " (오늘)" : ` (D-${r.rDays})`) : "—"]] : []);
   const secs = [["상세 내용", r.detail], ["진행 현황 및 변동 사항", r.progress], ["피드백", r.feedback]]
     .filter(([,v]) => v).map(([k,v]) => `<div class="sec"><h4>${k}</h4><div class="txt">${esc(v)}</div></div>`).join("");
   document.getElementById("drawerBody").innerHTML =
@@ -983,14 +1306,117 @@ document.getElementById("bCat").onchange   = e => { BOARD.cat = e.target.value; 
 document.getElementById("bStale").onchange = e => { BOARD.stale = e.target.checked; renderBoard(); };
 document.getElementById("bQ").oninput      = e => { BOARD.q = e.target.value; renderBoard(); };
 
+/* ---------- 루틴 화면 ---------- */
+function routineRows(){ return ROWS.filter(r => r.isRoutine); }
+function renderRoutine(){
+  const rs = routineRows();
+  const cnt = k => rs.filter(r => r.rBucket === k).length;
+  const urgent = cnt("late") + cnt("today") + cnt("never");
+  const tabN = document.getElementById("tabRoutineN");
+  tabN.textContent = urgent ? urgent : "";
+
+  /* KPI */
+  document.getElementById("rTiles").innerHTML =
+    `<div class="card hero"><div class="label">루틴 업무</div>
+       <div class="val">${rs.length}<span class="unit">건</span></div>
+       <div style="font-size:11px;color:var(--muted);margin-top:8px">전체 ${ROWS.length}건 중 ${
+         ROWS.length ? Math.round(rs.length / ROWS.length * 100) : 0}%</div></div>` +
+    RBUCKETS.map(([label, k, c, i]) =>
+      `<div class="card tile"><div class="label"><span class="dot" style="background:${c}"></span><span class="ico">${i}</span> ${label}</div>
+        <div class="val">${cnt(k)}<span class="pct">${rs.length ? Math.round(cnt(k)/rs.length*100) : 0}%</span></div></div>`).join("");
+
+  if(!rs.length){
+    document.getElementById("rGroups").innerHTML =
+      `<h2>루틴 업무</h2><div class="empty">시트 <b>M열(반복 주기)</b> 에 <code>매주 월</code> 같은 값을 넣으면
+       그 행이 루틴 업무로 잡히고 여기에 표시됩니다.</div>`;
+    document.getElementById("rLoad").innerHTML = "";
+    document.getElementById("rLoadX").innerHTML = "";
+    return;
+  }
+
+  /* 다음 14일 부하 — 날짜 칩 스트립 */
+  const DAYS = 14, buckets = new Map();
+  for(let i = 0; i < DAYS; i++){
+    const d = new Date(TODAY); d.setDate(TODAY.getDate() + i);
+    buckets.set(key(d), {d, n:0, tasks:[]});
+  }
+  const last = new Date(TODAY); last.setDate(TODAY.getDate() + DAYS - 1);
+  rs.forEach(r => {
+    if(!r.cyc || r.cyc.kind === "free") return;
+    const seed = r.lastRunD || (function(){ const x = new Date(TODAY); x.setDate(x.getDate() - 1); return x; })();
+    occurrences(r.cyc, seed, TODAY, last).forEach(d => {
+      const b = buckets.get(key(d));
+      if(b){ b.n++; if(b.tasks.length < 8) b.tasks.push(r.task || "(제목 없음)"); }
+    });
+    /* 지연·오늘 건은 오늘 칸에도 한 번 올린다 */
+    if(r.rBucket === "late" || r.rBucket === "never"){
+      const b = buckets.get(key(TODAY));
+      if(b && b.tasks.indexOf(r.task) < 0){ b.n++; b.tasks.push((r.task || "(제목 없음)") + " (밀린 건)"); }
+    }
+  });
+  const arr = [...buckets.values()], max = Math.max(1, ...arr.map(b => b.n));
+  const load = document.getElementById("rLoad");
+  load.innerHTML = arr.map((b, i) => {
+    const wd = WD[b.d.getDay()], we = b.d.getDay() === 0 || b.d.getDay() === 6;
+    const heat = b.n ? Math.min(1, 0.22 + (b.n / max) * 0.78) : 0;
+    const bg = b.n ? `background:color-mix(in srgb, var(--h-blue) ${Math.round(heat*100)}%, var(--surface));color:${heat > .55 ? "#fff" : "var(--ink)"}` : "";
+    return `<div class="rday${we ? " we" : ""}${i === 0 ? " today" : ""}"
+              data-t="${md(b.d)}(${wd}) · ${b.n}건${b.tasks.length ? "\n" + esc(b.tasks.join("\n")) : ""}">
+      <div class="wd" ${we ? 'style="color:var(--s-crit)"' : ""}>${wd}</div>
+      <div class="dt">${b.d.getMonth()+1}/${b.d.getDate()}</div>
+      <div class="cn ${b.n ? "" : "z"}" style="${bg}">${b.n || "·"}</div></div>`;
+  }).join("");
+  load.querySelectorAll(".rday").forEach(c => bindTip(c, c.dataset.t));
+
+  /* 그룹 목록 */
+  const html = RBUCKETS.map(([label, k, c, i]) => {
+    const g = rs.filter(r => r.rBucket === k)
+      .sort((a,b) => (a.nextDue ? +a.nextDue : 0) - (b.nextDue ? +b.nextDue : 0));
+    if(!g.length) return "";
+    return `<div class="rgrp"><h3><span class="ico" style="color:${c}">${i}</span>
+        <span class="dot" style="background:${c}"></span>${label}<span class="c">${g.length}건</span></h3>
+      <div class="rlist">${g.map(r => {
+        let chip, ctxt;
+        if(k === "never"){ chip = "var(--s-none)"; ctxt = "기록 없음"; }
+        else if(k === "late"){ chip = "var(--s-crit)"; ctxt = Math.abs(r.rDays) + "일 지연"; }
+        else if(k === "today"){ chip = "var(--s-serious)"; ctxt = "오늘"; }
+        else { chip = k === "soon" ? "var(--h-blue)" : "var(--chip)"; ctxt = "D-" + r.rDays; }
+        const fg = k === "later" ? "var(--ink2)" : "#fff";
+        return `<article class="rcard" data-no="${r.no}">
+          <div><div class="tt">${esc(r.task || "(제목 없음)")}</div>
+            <div class="mt">
+              <span class="cyc">↻ ${esc(r.cyc.label)}</span>
+              &nbsp;최근 ${r.lastRunD ? md(r.lastRunD) : "—"}
+              ${r.nextDue ? " · 다음 " + md(r.nextDue) : ""}
+              ${r.catL !== "미분류" ? " · " + esc(r.catL) : ""}
+            </div></div>
+          <div class="dd"><span class="rchip" style="background:${chip};color:${fg}">${ctxt}</span></div>
+        </article>`;
+      }).join("")}</div></div>`;
+  }).join("");
+  document.getElementById("rGroups").innerHTML = `<h2>주기별 루틴 현황</h2>
+    <p class="note">최근 수행일 + 반복 주기로 계산한 다음 예정일 기준. 카드를 누르면 상세가 열립니다.</p>` + html;
+  document.querySelectorAll("#rGroups .rcard").forEach(c =>
+    c.addEventListener("click", () => openDrawer(+c.dataset.no)));
+}
+
 /* ---------- 캘린더 ---------- */
 const CAL = {y:TODAY.getFullYear(), m:TODAY.getMonth(), field:"deadline", status:"", sel:null, picked:false};
-const FIELD_LABEL = {deadline:"처리예정일자", doneDate:"처리일자", reqD:"요청 일자", stamps:"진행 현황 업데이트 기록"};
+const FIELD_LABEL = {deadline:"처리예정일자", doneDate:"처리일자", reqD:"요청 일자",
+                     stamps:"진행 현황 업데이트 기록", routine:"루틴 반복 일정"};
 function calEvents(){
   const out = [];
   ROWS.forEach(r => {
     if(CAL.status && r.statusL !== CAL.status) return;
     if(CAL.field === "stamps") r.stamps.forEach(d => out.push({d, r}));
+    else if(CAL.field === "routine"){
+      if(!r.isRoutine || !r.cyc || r.cyc.kind === "free") return;
+      const a = new Date(CAL.y, CAL.m, 1), b = new Date(CAL.y, CAL.m + 1, 0);
+      a.setHours(0,0,0,0); b.setHours(0,0,0,0);
+      let seed = r.lastRunD || (function(){ const x = new Date(a); x.setDate(a.getDate() - 1); return x; })();
+      if(seed > b) return;
+      occurrences(r.cyc, seed, a, b).forEach(d => out.push({d, r}));
+    }
     else if(r[CAL.field]) out.push({d:r[CAL.field], r});
   });
   return out;
@@ -1056,7 +1482,7 @@ document.getElementById("calField").onchange = e => { CAL.field = e.target.value
 document.getElementById("calStatus").onchange = e => { CAL.status = e.target.value; renderCalendar(); };
 
 /* ---------- 탭 ---------- */
-const VIEWS = {board:"viewBoard", cal:"viewCal", dash:"viewDash"};
+const VIEWS = {board:"viewBoard", routine:"viewRoutine", cal:"viewCal", dash:"viewDash"};
 function showTab(which){
   Object.entries(VIEWS).forEach(([k,id]) => {
     document.getElementById(id).classList.toggle("hidden", k !== which);
@@ -1064,7 +1490,9 @@ function showTab(which){
   });
   if(which === "cal") renderCalendar();
   if(which === "board") renderBoard();
+  if(which === "routine") renderRoutine();
 }
+document.getElementById("tabRoutine").onclick = () => showTab("routine");
 document.getElementById("tabBoard").onclick = () => showTab("board");
 document.getElementById("tabCal").onclick   = () => showTab("cal");
 document.getElementById("tabDash").onclick  = () => showTab("dash");
@@ -1137,7 +1565,9 @@ function render(rows){
   timeline(ROWS); riskList(ROWS); recentList(ROWS);
 
   if(!CAL.picked){
-    const nOf = f => f === "stamps" ? ROWS.reduce((a,r) => a + r.stamps.length, 0) : ROWS.filter(r => r[f]).length;
+    const nOf = f => f === "stamps" ? ROWS.reduce((a,r) => a + r.stamps.length, 0)
+                   : f === "routine" ? ROWS.filter(r => r.isRoutine).length
+                   : ROWS.filter(r => r[f]).length;
     CAL.field = nOf("deadline") ? "deadline" : ["doneDate","reqD","stamps"].sort((a,b) => nOf(b) - nOf(a))[0];
     document.getElementById("calField").value = CAL.field;
     CAL.picked = true;
@@ -1148,8 +1578,11 @@ function render(rows){
   fillSelect("fPrio", priosIn(ROWS), "우선순위 전체");
   fillSelect("calStatus", STATUSES, "상태 전체");
   fillSelect("bCat", [...new Set(ROWS.map(r => r.catL))], "분류 전체");
+  renderCatChips("bCatChips", "bCat", () => { BOARD.cat = document.getElementById("bCat").value; renderBoard(); });
+  renderCatChips("fCatChips", "fCat", renderTable);
   renderTable();
   renderBoard();
+  renderRoutine();
   if(document.getElementById("tabCal").getAttribute("aria-selected") === "true") renderCalendar();
 }
 /* 최근 업데이트 최신순 → 미기록은 뒤로 */
@@ -1157,6 +1590,20 @@ function sortRows(rs){
   return rs.slice().sort((a,b) => (b.lastUpdate?+b.lastUpdate:0) - (a.lastUpdate?+a.lastUpdate:0));
 }
 
+/* 데모 데이터의 T±n 표기를 실행 시점 기준 날짜로 변환 — 시간이 지나도 데모가 유효하도록 */
+function relativizeDemo(rows){
+  const shift = n => { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; };
+  const dateOf = v => { const m = /^T([+-]\d+)$/.exec(String(v || "")); if(!m) return v;
+    const d = shift(+m[1]); return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}`; };
+  const stampOf = v => String(v || "").replace(/\[T([+-]\d+)\]/g, function(_, n){
+    const d = shift(+n); return "[" + (d.getMonth()+1) + "/" + d.getDate() + "]"; });
+  return rows.map(function(r){
+    return Object.assign({}, r, {
+      reqDate: dateOf(r.reqDate), due: dateOf(r.due), done: dateOf(r.done),
+      lastRun: dateOf(r.lastRun), progress: stampOf(r.progress), detail: stampOf(r.detail)
+    });
+  });
+}
 function badge(txt, live){
   document.getElementById("srcbadge").innerHTML =
     `<span class="dot" style="background:${live?"var(--s-good)":"var(--s-warn)"}"></span>${esc(txt)}`;
@@ -1171,7 +1618,7 @@ async function boot(){
     badge("실시간 연동", true);
     document.getElementById("asof").textContent = "조회 " + new Date().toLocaleString("ko-KR");
   }catch(e){
-    render(SNAPSHOT);
+    render(relativizeDemo(SNAPSHOT));
     badge(SHEET_ID ? "데모 데이터 (시트 접근 실패)" : "데모 데이터 (시트 미지정)", false);
     document.getElementById("asof").textContent = SHEET_ID
       ? "?sheet= 값과 시트 공개 설정을 확인하세요"
