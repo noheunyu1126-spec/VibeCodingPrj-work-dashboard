@@ -1,0 +1,14 @@
+# 실제 업무 데이터가 박힌 빌드 산출물 — 절대 커밋 금지
+*_사내용.html
+*_private.html
+*-private.html
+진행현황_*.html
+snapshot.json
+snapshot.csv
+data/
+*.local.html
+
+# 작업 파일
+node_modules/
+*.png
+.DS_Store
