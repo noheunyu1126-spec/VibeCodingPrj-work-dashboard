@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>구글시트 업무 보드</title>
+<!-- GitHub Pages·Vercel 어디서든 루트(/)로 접속할 수 있게 하는 진입 파일.
+     ?sheet=<시트ID> 같은 쿼리스트링과 #해시를 그대로 넘긴 뒤 dashboard.html 로 이동합니다. -->
+<script>
+  location.replace("dashboard.html" + location.search + location.hash);
+</script>
+<meta http-equiv="refresh" content="0; url=dashboard.html">
+<style>
+  body{margin:0;display:grid;place-items:center;height:100vh;background:#f9f9f7;color:#52514e;
+       font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px}
+  @media (prefers-color-scheme:dark){ body{background:#0d0d0d;color:#c3c2b7} }
+  a{color:#2a78d6}
+</style>
+</head>
+<body>
+  <p>대시보드로 이동합니다 … 자동으로 넘어가지 않으면 <a href="dashboard.html">여기를 눌러 주세요</a>.</p>
+</body>
+</html>
