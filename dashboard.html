@@ -144,6 +144,8 @@
   .di .body b:first-child{margin-top:0}
   .foot{margin-top:22px; font-size:11.5px; color:var(--muted); line-height:1.7}
 
+  .verpick{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
+  .verpick span{white-space:nowrap;font-weight:600}
   /* 대분류 칩 (셀렉트박스 대체) */
   .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .chip{font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer;
@@ -219,6 +221,9 @@
   .drawer .kv dd{margin:0; color:var(--ink)}
   .drawer .sec{margin-top:18px}
   .drawer .sec h4{font-size:11.5px; font-weight:650; color:var(--muted); margin:0 0 6px; letter-spacing:.02em}
+  .drawer .relrow{padding:4px 0;font-size:12.5px}
+  .drawer .relrow a{color:var(--h-blue);text-decoration:none;font-weight:600}
+  .drawer .relrow a:hover{text-decoration:underline}
   .drawer .sec .txt{font-size:12.5px; white-space:pre-line; line-height:1.6; color:var(--ink2);
                     background:var(--chip); border-radius:10px; padding:12px 14px}
 
@@ -254,9 +259,16 @@
       원본 시트: <a id="srclink" href="#" target="_blank" rel="noopener">구글시트 열기</a>
       · <span id="srcbadge" class="badge">불러오는 중…</span>
       · <span id="asof" class="badge"></span>
+      · <span id="verbadge" class="badge"></span>
     </div>
   </div>
   <div class="toolbar">
+    <label class="verpick"><span>데이터 형식</span>
+      <select id="verSel">
+        <option value="auto">자동 감지</option>
+        <option value="v1">V1 · 12열 기본형</option>
+        <option value="v2">V2 · 15열 확장형</option>
+      </select></label>
     <button id="reload">새로고침</button>
     <button id="theme">다크 모드</button>
   </div>
@@ -278,6 +290,9 @@
         <option value="group">열 기준: 5단계 묶음</option>
         <option value="cat">열 기준: 요청 분류</option>
         <option value="routine">열 기준: 루틴 / 단발</option>
+        <option value="owner">열 기준: 담당자</option>
+        <option value="org">열 기준: 요청기관</option>
+        <option value="reqType">열 기준: 요청구분</option>
       </select>
       <select id="bCat" class="hidden"><option value="">분류 전체</option></select>
       <input type="search" id="bQ" placeholder="태스크 · 내용 검색">
@@ -362,7 +377,7 @@
   <div class="tblwrap">
     <table>
       <thead><tr>
-        <th>#</th><th>분류</th><th>태스크</th><th>요청자/구분</th><th>우선</th><th>상태</th><th>처리예정일자</th><th>최근 업데이트</th>
+        <th>#</th><th>업무구분</th><th>태스크</th><th>담당자 / 요청기관</th><th>우선</th><th>상태</th><th>처리예정일자</th><th>최근 업데이트</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -439,15 +454,29 @@
 /* 시트 ID는 코드에 넣지 않습니다.
    사용법: dashboard.html?sheet=<구글시트 ID>   (ID를 생략하면 데모 데이터로 열립니다)
    시트는 "링크가 있는 모든 사용자(보기)"로 공개돼 있어야 브라우저에서 읽을 수 있습니다. */
-const SHEET_ID  = new URLSearchParams(location.search).get("sheet") || "";
-const SHEET_URL = SHEET_ID ? "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit" : "#";
+const QS        = new URLSearchParams(location.search);
+const SHEET_ID  = QS.get("sheet") || "";
+const SHEET_TAB = QS.get("tab") || "";                    /* 탭 이름 (선택) */
+const SHEET_GID = (QS.get("gid") || "").replace(/[^0-9]/g, ""); /* 탭 gid — 구글시트 URL 의 #gid= 값 */
+let   VER       = (QS.get("ver") || "auto").toLowerCase(); /* auto | v1 | v2 */
+if(["auto","v1","v2"].indexOf(VER) < 0) VER = "auto";
+let   VER_USED  = "v1";                                    /* 실제 적용된 버전 */
+const SHEET_URL = SHEET_ID
+  ? "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit"
+    + (SHEET_GID ? "#gid=" + SHEET_GID : "")
+  : "#";
 const SNAPSHOT_DATE = "데모";
 const SNAPSHOT = [
 {
 "cat": "웹사이트 리뉴얼",
 "id": "W-01",
-"req": "김하늘",
+"parentId": "",
+"reqType": "개선",
 "reqDate": "T-50",
+"org": "기획팀",
+"owner": "김하늘",
+"cycle": "",
+"lastRun": "",
 "task": "메인 페이지 개편",
 "detail": "- 히어로 영역 시안 3종 검토\n- 모바일 우선 레이아웃 적용",
 "prio": "상",
@@ -456,15 +485,58 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-9] 1차 시안 공유\n[T-3] 피드백 반영본 전달(디자인팀)",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
 "no": 1
 },
 {
 "cat": "웹사이트 리뉴얼",
+"id": "W-01-1",
+"parentId": "W-01",
+"reqType": "개선",
+"reqDate": "T-48",
+"org": "기획팀",
+"owner": "박서준",
+"cycle": "",
+"lastRun": "",
+"task": "히어로 배너 시안 확정",
+"detail": "3종 중 1안으로 결정 필요",
+"prio": "상",
+"status": "확인 요청",
+"due": "T+2",
+"done": "",
+"progress": "[T-3] 의견 취합 중",
+"feedback": "",
+"no": 2
+},
+{
+"cat": "웹사이트 리뉴얼",
+"id": "W-01-2",
+"parentId": "W-01",
+"reqType": "개선",
+"reqDate": "T-48",
+"org": "기획팀",
+"owner": "김하늘",
+"cycle": "",
+"lastRun": "",
+"task": "모바일 레이아웃 적용",
+"detail": "",
+"prio": "곧",
+"status": "시작 전",
+"due": "T+9",
+"done": "",
+"progress": "",
+"feedback": "",
+"no": 3
+},
+{
+"cat": "웹사이트 리뉴얼",
 "id": "W-02",
-"req": "김하늘",
+"parentId": "",
+"reqType": "오류",
 "reqDate": "T-44",
+"org": "기획팀",
+"owner": "김하늘",
+"cycle": "",
+"lastRun": "",
 "task": "접근성 점검",
 "detail": "WCAG AA 기준 명도 대비 검수 필요",
 "prio": "곧",
@@ -473,15 +545,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-4] 점검 도구 선정 완료",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 2
+"no": 4
 },
 {
 "cat": "웹사이트 리뉴얼",
 "id": "W-03",
-"req": "",
+"parentId": "",
+"reqType": "개선",
 "reqDate": "",
+"org": "기획팀",
+"owner": "",
+"cycle": "",
+"lastRun": "",
 "task": "다국어 리소스 정리",
 "detail": "",
 "prio": "하",
@@ -490,15 +565,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 3
+"no": 5
 },
 {
 "cat": "채용",
 "id": "R-01",
-"req": "박서준",
+"parentId": "",
+"reqType": "신규",
 "reqDate": "T-37",
+"org": "인사팀",
+"owner": "박서준",
+"cycle": "",
+"lastRun": "",
 "task": "공고문 최종 검토",
 "detail": "직무기술서 문구 확정 필요",
 "prio": "상",
@@ -507,15 +585,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-7] 초안 회신\n[T-2] 부서 의견 취합 중",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 4
+"no": 6
 },
 {
 "cat": "채용",
 "id": "R-02",
-"req": "박서준",
+"parentId": "R-01",
+"reqType": "신규",
 "reqDate": "",
+"org": "인사팀",
+"owner": "박서준",
+"cycle": "",
+"lastRun": "",
 "task": "면접 일정 조율",
 "detail": "",
 "prio": "",
@@ -524,15 +605,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-1] 후보자 3명 일정 확정",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 5
+"no": 7
 },
 {
 "cat": "운영",
 "id": "O-01",
-"req": "이도윤",
+"parentId": "",
+"reqType": "개선",
 "reqDate": "",
+"org": "운영팀",
+"owner": "이도윤",
+"cycle": "",
+"lastRun": "",
 "task": "월간 리포트 자동화",
 "detail": "스프레드시트 수식 → 스크립트 전환",
 "prio": "곧",
@@ -541,15 +625,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-24] 요구사항 정리\n[T-18] 우선순위 조정으로 보류",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 6
+"no": 8
 },
 {
 "cat": "운영",
 "id": "O-02",
-"req": "이도윤",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "운영팀",
+"owner": "이도윤",
+"cycle": "",
+"lastRun": "",
 "task": "서버 정기 점검",
 "detail": "",
 "prio": "하",
@@ -558,15 +645,18 @@ const SNAPSHOT = [
 "done": "T-11",
 "progress": "[T-11] 점검 완료, 이상 없음",
 "feedback": "다음 점검 다음 달",
-"cycle": "",
-"lastRun": "",
-"no": 7
+"no": 9
 },
 {
 "cat": "운영",
 "id": "O-03",
-"req": "",
+"parentId": "",
+"reqType": "신규",
 "reqDate": "",
+"org": "운영팀",
+"owner": "",
+"cycle": "",
+"lastRun": "",
 "task": "백업 정책 문서화",
 "detail": "",
 "prio": "",
@@ -575,15 +665,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 8
+"no": 10
 },
 {
 "cat": "예산",
 "id": "B-01",
-"req": "최지우",
+"parentId": "",
+"reqType": "문의",
 "reqDate": "",
+"org": "재무팀",
+"owner": "최지우",
+"cycle": "",
+"lastRun": "",
 "task": "3분기 정산",
 "detail": "증빙 누락 건 확인 필요",
 "prio": "상",
@@ -592,15 +685,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-15] 1차 취합\n[T-2] 누락 2건 재요청",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 9
+"no": 11
 },
 {
 "cat": "예산",
 "id": "B-02",
-"req": "최지우",
+"parentId": "",
+"reqType": "신규",
 "reqDate": "",
+"org": "재무팀",
+"owner": "최지우",
+"cycle": "",
+"lastRun": "",
 "task": "예비비 집행 계획",
 "detail": "",
 "prio": "하",
@@ -609,15 +705,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-30] 차기 회의로 이전",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 10
+"no": 12
 },
 {
-"cat": "",
+"cat": "교육",
 "id": "",
-"req": "",
+"parentId": "",
+"reqType": "신규",
 "reqDate": "",
+"org": "인사팀",
+"owner": "",
+"cycle": "",
+"lastRun": "",
 "task": "교육 자료 업데이트",
 "detail": "신규 입사자용 온보딩 자료",
 "prio": "",
@@ -626,15 +725,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 11
+"no": 13
 },
 {
 "cat": "",
 "id": "",
-"req": "",
+"parentId": "",
+"reqType": "기타",
 "reqDate": "",
+"org": "",
+"owner": "",
+"cycle": "",
+"lastRun": "",
 "task": "사내 공지 템플릿 정비",
 "detail": "",
 "prio": "",
@@ -643,15 +745,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-16] 별도 과제로 통합되어 중단",
 "feedback": "",
-"cycle": "",
-"lastRun": "",
-"no": 12
+"no": 14
 },
 {
 "cat": "운영",
 "id": "L-01",
-"req": "이도윤",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "운영팀",
+"owner": "이도윤",
+"cycle": "매일",
+"lastRun": "T-1",
 "task": "일일 지표 점검",
 "detail": "가입·이탈·오류율 3종 확인 후 채널 공유",
 "prio": "상",
@@ -660,15 +765,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-1] 이상 없음",
 "feedback": "",
-"cycle": "매일",
-"lastRun": "T-1",
-"no": 13
+"no": 15
 },
 {
 "cat": "운영",
 "id": "L-02",
-"req": "이도윤",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "운영팀",
+"owner": "이도윤",
+"cycle": "매일",
+"lastRun": "T-5",
 "task": "서버 로그 확인",
 "detail": "에러 로그 확인 후 이슈 등록",
 "prio": "곧",
@@ -677,15 +785,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-5] 확인 완료",
 "feedback": "",
-"cycle": "매일",
-"lastRun": "T-5",
-"no": 14
+"no": 16
 },
 {
 "cat": "운영",
 "id": "L-03",
-"req": "김하늘",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "운영팀",
+"owner": "김하늘",
+"cycle": "매주 월",
+"lastRun": "T-11",
 "task": "주간 업무 보고",
 "detail": "팀 주간 보고서 작성 및 발송",
 "prio": "상",
@@ -694,15 +805,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-11] 발송 완료",
 "feedback": "",
-"cycle": "매주 월",
-"lastRun": "T-11",
-"no": 15
+"no": 17
 },
 {
 "cat": "운영",
 "id": "L-04",
-"req": "",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "운영팀",
+"owner": "",
+"cycle": "10일마다",
+"lastRun": "T-6",
 "task": "백업 상태 점검",
 "detail": "백업 성공 여부 및 용량 확인",
 "prio": "하",
@@ -711,15 +825,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "",
 "feedback": "",
-"cycle": "10일마다",
-"lastRun": "T-6",
-"no": 16
+"no": 18
 },
 {
 "cat": "예산",
 "id": "L-05",
-"req": "최지우",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "재무팀",
+"owner": "최지우",
+"cycle": "매분기",
+"lastRun": "T-30",
 "task": "분기 보안 점검",
 "detail": "점검표 작성 후 보안팀 제출",
 "prio": "곧",
@@ -728,15 +845,18 @@ const SNAPSHOT = [
 "done": "",
 "progress": "[T-30] 3분기 점검 완료",
 "feedback": "",
-"cycle": "매분기",
-"lastRun": "T-30",
-"no": 17
+"no": 19
 },
 {
 "cat": "",
 "id": "L-06",
-"req": "",
+"parentId": "",
+"reqType": "정기",
 "reqDate": "",
+"org": "인사팀",
+"owner": "",
+"cycle": "매년 3/1",
+"lastRun": "",
 "task": "정보보호 교육 이수",
 "detail": "전 직원 연 1회 필수 교육",
 "prio": "하",
@@ -745,14 +865,37 @@ const SNAPSHOT = [
 "done": "",
 "progress": "",
 "feedback": "",
-"cycle": "매년 3/1",
-"lastRun": "",
-"no": 18
+"no": 20
 }
 ];
 
-const COLS = ["cat","id","req","reqDate","task","detail","prio","status","due","done","progress","feedback",
-             "cycle","lastRun"];   /* M: 반복 주기, N: 최근 수행일 — 없는 시트도 그대로 동작 */
+/* ---------- 시트 스키마 (V1 / V2) ----------
+   내부 모델은 두 버전 공통. 열 순서만 버전별로 매핑한다.
+   V1 : 요청 분류 · ID · 요청자 · 요청일자 · 태스크 · 상세 · 우선순위 · 상태 ·
+        처리예정일자 · 처리일자 · 진행현황 · 피드백 · [반복주기 · 최근수행일]
+   V2 : 업무구분 · ID · 부모ID · 요청구분 · 요청일자 · 요청기관 · 담당자 ·
+        반복주기 · 최근수행일 · 태스크 · 상세 · 우선순위 · 상태 ·
+        처리예정일자/처리일자 · 진행현황                                        */
+const SCHEMAS = {
+  v1: { label:"V1 (12열 기본형)",
+        cols:["cat","id","owner","reqDate","task","detail","prio","status","due","done","progress","feedback","cycle","lastRun"],
+        sig:["요청 분류","피드백"], has:{parent:false, org:false, reqType:false, feedback:true} },
+  v2: { label:"V2 (15열 확장형)",
+        cols:["cat","id","parentId","reqType","reqDate","org","owner","cycle","lastRun","task","detail","prio","status","due","progress"],
+        sig:["업무구분","부모ID","요청기관","담당자"], has:{parent:true, org:true, reqType:true, feedback:false} }
+};
+const ALL_FIELDS = ["cat","id","parentId","reqType","reqDate","org","owner","cycle","lastRun",
+                    "task","detail","prio","status","due","done","progress","feedback"];
+/* 헤더 문구로 버전 자동 판별 */
+function detectVersion(headerCells){
+  const txt = (headerCells || []).join(" ").replace(/\s+/g, "");
+  let best = "v1", score = -1;
+  Object.keys(SCHEMAS).forEach(v => {
+    const n = SCHEMAS[v].sig.filter(k => txt.indexOf(k.replace(/\s+/g,"")) >= 0).length;
+    if(n > score){ score = n; best = v; }
+  });
+  return {ver:best, score:score};
+}
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 
 /* ---------- 상태 레지스트리 (시트 값에 맞춰 동적 확장) ---------- */
@@ -796,7 +939,7 @@ function statusesIn(rows){
   extra.forEach(meta);            // 색 배정
   return known.concat(extra);
 }
-const PRIO_SEQ = ["상","곧","하","미지정"];
+const PRIO_SEQ = ["상","중","곧","하","미지정"];
 function priosIn(rows){
   const present = [...new Set(rows.map(r => r.prioL))];
   return PRIO_SEQ.filter(p => present.includes(p))
@@ -810,7 +953,9 @@ function loadLive(){
     let settled = false;
     window.google = { visualization: { Query: { setResponse: r => { if(!settled){ settled = true; resolve(r); } } } } };
     const s = document.createElement("script");
-    s.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&headers=1&_=" + Date.now();
+    s.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&headers=1"
+          + (SHEET_GID ? "&gid=" + SHEET_GID : "")
+          + (SHEET_TAB ? "&sheet=" + encodeURIComponent(SHEET_TAB) : "") + "&_=" + Date.now();
     s.onerror = () => { if(!settled){ settled = true; reject(new Error("blocked")); } };
     document.head.appendChild(s);
     setTimeout(() => { if(!settled){ settled = true; reject(new Error("timeout")); } }, 12000);
@@ -829,11 +974,16 @@ function cellText(c){
 }
 function fromGviz(res){
   if(!res || res.status === "error" || !res.table) throw new Error("gviz error");
+  const labels = (res.table.cols || []).map(c => (c && (c.label || c.id)) || "");
+  const ver = VER === "auto" ? detectVersion(labels).ver : VER;
+  VER_USED = ver;
+  const cols = SCHEMAS[ver].cols;
   return res.table.rows.map(r => {
     const o = {};
-    COLS.forEach((k,i) => o[k] = (cellText(r.c && r.c[i]) || "").trim());
+    ALL_FIELDS.forEach(k => o[k] = "");
+    cols.forEach((k,i) => o[k] = (cellText(r.c && r.c[i]) || "").trim());
     return o;
-  }).filter(o => COLS.some(k => o[k]));
+  }).filter(o => cols.some(k => o[k]));
 }
 
 /* ---------- 날짜 ---------- */
@@ -877,14 +1027,17 @@ function parseCycle(str){
   if(/^매일/.test(s)) return {kind:"day", n:1, label:s, short:"매일"};
   if((m = s.match(/^(\d+)\s*일\s*마다/))) return {kind:"day", n:Math.max(1,+m[1]), label:s, short:s};
   if((m = s.match(/^(\d+)\s*주\s*마다/))) return {kind:"day", n:Math.max(1,+m[1])*7, label:s, short:s};
-  if(/^매주/.test(s)){
+  if(/^매주|^주간/.test(s)){
     const days = (s.match(/[일월화수목금토]/g) || []).map(d => WD.indexOf(d)).filter(i => i >= 0);
-    return {kind:"week", days: days.length ? days : [1], label:s, short:"매주"};
+    /* 요일을 안 적으면 '최근 수행일로부터 7일' 로 해석 (임의로 월요일을 가정하지 않는다) */
+    return days.length ? {kind:"week", days:days, label:s, short:"매주"}
+                       : {kind:"day", n:7, label:s, short:"매주"};
   }
   if(/^매월|^월간/.test(s)){
     if(/말일/.test(s)) return {kind:"month", day:"last", label:s, short:"매월"};
     m = s.match(/(\d{1,2})\s*일/);
-    return {kind:"month", day: m ? Math.min(31, Math.max(1, +m[1])) : 1, label:s, short:"매월"};
+    /* 날짜를 안 적으면 '최근 수행일과 같은 날' 로 해석 */
+    return {kind:"month", day: m ? Math.min(31, Math.max(1, +m[1])) : "same", label:s, short:"매월"};
   }
   if(/^매분기|^분기/.test(s)) return {kind:"quarter", label:s, short:"매분기"};
   if(/^매년|^연간/.test(s)){
@@ -899,6 +1052,7 @@ function eom(y,m){ return new Date(y, m+1, 0).getDate(); }
 function nextAfter(c, from){
   if(!c || c.kind === "free") return null;
   const d = new Date(from); d.setHours(0,0,0,0);
+  if(isNaN(d)) return null;
   if(c.kind === "day"){ const x = new Date(d); x.setDate(d.getDate() + (c.n || 1)); return x; }
   if(c.kind === "week"){
     for(let i = 1; i <= 14; i++){
@@ -908,7 +1062,8 @@ function nextAfter(c, from){
     return null;
   }
   if(c.kind === "month"){
-    const at = (y,m) => new Date(y, m, c.day === "last" ? eom(y,m) : Math.min(c.day, eom(y,m)));
+    const dayOf = c.day === "same" ? d.getDate() : c.day;
+    const at = (y,m) => new Date(y, m, dayOf === "last" ? eom(y,m) : Math.min(dayOf, eom(y,m)));
     let cand = at(d.getFullYear(), d.getMonth());
     if(cand <= d) cand = at(d.getFullYear(), d.getMonth() + 1);
     cand.setHours(0,0,0,0); return cand;
@@ -942,10 +1097,13 @@ const RBUCKETS = [["지연","late","var(--s-crit)","!"],["오늘","today","var(-
 
 /* ---------- 정규화 ---------- */
 function normalize(rows){
-  return rows.map((r,i) => {
+  const out = rows.map((r,i) => {
     const o = Object.assign({}, r);
     o.no = i+1;
     o.catL = o.cat || "미분류";
+    o.ownerL = (o.owner || "").trim() || "담당자 미지정";
+    o.orgL = (o.org || "").trim() || "기관 미기재";
+    o.reqTypeL = (o.reqType || "").trim() || "구분 없음";
     o.statusL = o.status || "상태 미기입";
     o.prioL = o.prio || "미지정";
     o.m = meta(o.statusL);
@@ -955,6 +1113,10 @@ function normalize(rows){
     o.lastUpdate = o.stamps.length ? new Date(Math.max.apply(null, o.stamps)) : null;
     o.deadline = parseDateCell(o.due);
     o.doneDate = parseDateCell(o.done);
+    /* V2는 처리예정일자/처리일자가 한 칸 — 상태가 완료·중단이면 처리일자로 읽는다 */
+    if(!o.done && o.deadline && (o.statusL === "완료" || o.statusL === "중단")){
+      o.doneDate = o.deadline; o.done = o.due;
+    }
     o.reqD = parseDateCell(o.reqDate);
     /* 루틴 업무 */
     o.cyc = parseCycle(o.cycle);
@@ -979,6 +1141,15 @@ function normalize(rows){
     } else { o.risk = o.deadline ? "done" : "none"; o.riskDays = null; }
     return o;
   });
+  /* 부모ID ↔ 하위 업무 연결 (V2) */
+  const byId = {};
+  out.forEach(r => { if(r.id) byId[String(r.id).trim()] = r; });
+  out.forEach(r => { r.children = []; r.parent = null; });
+  out.forEach(r => {
+    const pid = String(r.parentId || "").trim();
+    if(pid && byId[pid] && byId[pid] !== r){ r.parent = byId[pid]; byId[pid].children.push(r); }
+  });
+  return out;
 }
 
 /* ---------- tooltip ---------- */
@@ -1025,7 +1196,7 @@ function drillList(el, title, items, filter){
       const parts = [esc(r.catL), esc(r.statusL)];
       if(r.prioL !== "미지정") parts.push("우선 " + esc(r.prioL));
       if(dl) parts.push("처리예정 " + dl);
-      if(r.req) parts.push(esc(r.req.replace(/\n/g," / ")));
+      if(r.owner) parts.push(esc(r.owner.replace(/\n/g," / ")));
       const body = [["상세 내용", r.detail], ["진행 현황 및 변동 사항", r.progress], ["피드백", r.feedback]]
         .filter(([,v]) => v).map(([k,v]) => `<b>${k}</b>${esc(v)}`).join("");
       return `<div class="di" data-no="${r.no}">
@@ -1132,7 +1303,7 @@ function renderTable(){
   const q = fQ.value.trim().toLowerCase();
   const list = ROWS.filter(r =>
     (!fc || r.catL === fc) && (!fs || r.statusL === fs) && (!fp || r.prioL === fp) && (!fr || r.risk === fr) &&
-    (!q || [r.task, r.detail, r.progress, r.req, r.feedback].join(" ").toLowerCase().includes(q)));
+    (!q || [r.task, r.detail, r.progress, r.owner, r.org, r.reqType, r.feedback].join(" ").toLowerCase().includes(q)));
   document.getElementById("tCount").textContent = `${list.length} / ${ROWS.length}건 표시`;
   const tb = document.getElementById("tbody");
   if(!list.length){ tb.innerHTML = `<tr><td colspan="8" class="empty">조건에 맞는 항목이 없습니다.</td></tr>`; return; }
@@ -1146,8 +1317,10 @@ function renderTable(){
     return `<tr class="row" data-no="${r.no}">
       <td class="n">${r.no}</td>
       <td style="color:var(--ink2)">${esc(r.catL)}</td>
-      <td class="task">${esc(r.task || "(제목 없음)")}</td>
-      <td style="color:var(--ink2);white-space:pre-line">${esc(r.req)}</td>
+      <td class="task">${r.parent ? '<span style="color:var(--muted)">└ </span>' : ""}${esc(r.task || "(제목 없음)")}${
+          r.children.length ? `<span style="color:var(--muted);font-weight:400;font-size:11px"> · 하위 ${r.children.length}</span>` : ""}</td>
+      <td style="color:var(--ink2);white-space:pre-line">${esc(r.owner)}${
+          r.org ? `<br><span style="color:var(--muted);font-size:11px">${esc(r.org)}</span>` : ""}</td>
       <td>${esc(r.prioL === "미지정" ? "—" : r.prioL)}</td>
       <td style="white-space:nowrap"><span class="ico" style="color:${r.m.c}">${r.m.i}</span> ${esc(r.statusL)}${r.m.isNew?' <span class="newflag">NEW</span>':""}</td>
       <td>${dl}</td>
@@ -1197,7 +1370,7 @@ function boardRows(){
   return ROWS.filter(r =>
     (!BOARD.cat || r.catL === BOARD.cat) &&
     (!BOARD.stale || (staleDays(r) === null || staleDays(r) >= 14)) &&
-    (!q || [r.task, r.detail, r.progress, r.req].join(" ").toLowerCase().includes(q)));
+    (!q || [r.task, r.detail, r.progress, r.owner, r.org, r.reqType].join(" ").toLowerCase().includes(q)));
 }
 function lastMemo(r){
   const src = (r.progress || "").split("\n").filter(Boolean);
@@ -1218,6 +1391,13 @@ function renderBoard(){
              rs: rows.filter(r => r.isRoutine && r.rBucket === k)}))
            .concat([{k:"단발 업무", c:"var(--s-gray)", i:"○", rs: rows.filter(r => !r.isRoutine)}])
            .filter(x => x.rs.length);
+  else if(BOARD.by === "owner" || BOARD.by === "org" || BOARD.by === "reqType"){
+    const f = BOARD.by === "owner" ? "ownerL" : BOARD.by === "org" ? "orgL" : "reqTypeL";
+    const ico = BOARD.by === "owner" ? "◍" : BOARD.by === "org" ? "▤" : "◈";
+    cols = [...new Set(ROWS.map(r => r[f]))]
+      .map(v => ({k:v, c:"var(--h-blue)", i:ico, rs:rows.filter(r => r[f] === v)}))
+      .sort((a,b) => b.rs.length - a.rs.length);
+  }
   else
     cols = [...new Set(ROWS.map(r => r.catL))]
       .map(c => ({k:c, c:"var(--h-blue)", i:"▣", rs:rows.filter(r => r.catL === c)}))
@@ -1251,6 +1431,9 @@ function renderBoard(){
         <div class="cfoot">${upd}
           ${BOARD.by !== "status" ? `<span class="bdg"><span class="ico" style="color:${r.m.c}">${r.m.i}</span> ${esc(r.statusL)}</span>` : ""}
           ${BOARD.by !== "cat" ? `<span class="bdg">${esc(r.catL)}</span>` : ""}
+          ${(SCHEMAS[VER_USED].has.parent && r.children.length)
+              ? `<span class="bdg" style="font-weight:650">⌄ 하위 ${r.children.length}</span>` : ""}
+          ${(r.owner && BOARD.by !== "owner") ? `<span class="bdg">◍ ${esc(r.owner)}</span>` : ""}
           ${r.prioL !== "미지정" ? `<span class="bdg pri">우선 ${esc(r.prioL)}</span>` : ""}
           ${r.deadline ? `<span class="bdg">예정 ${md(r.deadline)}</span>` : ""}
           ${r.isRoutine ? `<span class="bdg" style="background:${
@@ -1275,15 +1458,24 @@ function renderBoard(){
 function openDrawer(no){
   const r = ROWS.find(x => x.no === no); if(!r) return;
   const sd = staleDays(r);
-  const kv = [["분류", r.catL], ["상태", `${r.m.i} ${r.statusL}`], ["우선순위", r.prioL === "미지정" ? "—" : r.prioL],
-              ["요청자/구분", r.req || "—"], ["요청 일자", r.reqDate || "—"],
-              ["처리예정일자", r.due || "미입력"], ["처리일자", r.done || "—"],
-              ["최근 업데이트", r.lastUpdate ? `${md(r.lastUpdate)} (${sd === 0 ? "오늘" : sd + "일 전"})` : "기록 없음"]]
+  const V2 = SCHEMAS[VER_USED].has;
+  const kv = [["업무구분", r.catL], ["상태", `${r.m.i} ${r.statusL}`], ["우선순위", r.prioL === "미지정" ? "—" : r.prioL]]
+             .concat(V2.reqType ? [["요청구분", r.reqType || "—"]] : [])
+             .concat(V2.org ? [["요청기관", r.org || "—"]] : [])
+             .concat([["담당자", r.owner || "—"], ["요청 일자", r.reqDate || "—"],
+               ["처리예정일자", r.due || "미입력"], ["처리일자", r.done || "—"], ["ID", r.id || "—"],
+               ["최근 업데이트", r.lastUpdate ? `${md(r.lastUpdate)} (${sd === 0 ? "오늘" : sd + "일 전"})` : "기록 없음"]])
              .concat(r.isRoutine ? [["반복 주기", "↻ " + r.cyc.label],
                ["최근 수행일", r.lastRunD ? md(r.lastRunD) : "미실행"],
                ["다음 예정일", r.nextDue ? md(r.nextDue) + (r.rDays < 0 ? ` (${Math.abs(r.rDays)}일 지연)`
                  : r.rDays === 0 ? " (오늘)" : ` (D-${r.rDays})`) : "—"]] : []);
-  const secs = [["상세 내용", r.detail], ["진행 현황 및 변동 사항", r.progress], ["피드백", r.feedback]]
+  const rel = [];
+  if(r.parent) rel.push(`<div class="relrow">상위 &nbsp;<a href="#" data-go="${r.parent.no}">${esc(r.parent.task || r.parent.id)}</a></div>`);
+  r.children.forEach(c => rel.push(
+    `<div class="relrow">하위 &nbsp;<a href="#" data-go="${c.no}">${esc(c.task || c.id)}</a>
+       <span style="color:var(--muted);font-size:11.5px"> · ${esc(c.statusL)}</span></div>`));
+  const relHtml = rel.length ? `<div class="sec"><h4>연결된 업무</h4><div class="txt" style="white-space:normal">${rel.join("")}</div></div>` : "";
+  const secs = relHtml + [["상세 내용", r.detail], ["진행 현황 및 변동 사항", r.progress], ["피드백", r.feedback]]
     .filter(([,v]) => v).map(([k,v]) => `<div class="sec"><h4>${k}</h4><div class="txt">${esc(v)}</div></div>`).join("");
   document.getElementById("drawerBody").innerHTML =
     `<div style="font-size:11.5px;color:var(--muted)">시트 ${r.no}번째 행</div>
@@ -1291,6 +1483,8 @@ function openDrawer(no){
      <dl class="kv">${kv.map(([k,v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
      ${secs || `<div class="empty">상세 내용·진행 메모가 비어 있습니다.</div>`}
      <div class="sec"><a href="${SHEET_URL}" target="_blank" rel="noopener" style="font-size:12px;color:var(--h-blue)">원본 시트에서 열기 ↗</a></div>`;
+  document.querySelectorAll("#drawerBody [data-go]").forEach(a =>
+    a.addEventListener("click", ev => { ev.preventDefault(); openDrawer(+a.dataset.go); }));
   document.getElementById("drawer").classList.add("open");
   document.getElementById("scrim").classList.add("open");
 }
@@ -1590,6 +1784,18 @@ function sortRows(rs){
   return rs.slice().sort((a,b) => (b.lastUpdate?+b.lastUpdate:0) - (a.lastUpdate?+a.lastUpdate:0));
 }
 
+/* 선택한 버전에 없는 열은 데모에서도 비운다 — 버전 차이를 화면으로 확인할 수 있게 */
+function demoForVersion(rows, ver){
+  const has = SCHEMAS[ver].has;
+  return rows.map(function(r){
+    const o = Object.assign({}, r);
+    if(!has.parent){ o.parentId = ""; }
+    if(!has.org){ o.org = ""; }
+    if(!has.reqType){ o.reqType = ""; }
+    if(!has.feedback){ o.feedback = ""; }
+    return o;
+  });
+}
 /* 데모 데이터의 T±n 표기를 실행 시점 기준 날짜로 변환 — 시간이 지나도 데모가 유효하도록 */
 function relativizeDemo(rows){
   const shift = n => { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; };
@@ -1604,6 +1810,13 @@ function relativizeDemo(rows){
     });
   });
 }
+function verBadge(){
+  const b = document.getElementById("verbadge");
+  const auto = VER === "auto";
+  b.innerHTML = `<span class="dot" style="background:${VER_USED === "v2" ? "var(--h-aqua)" : "var(--h-blue)"}"></span>` +
+    esc(SCHEMAS[VER_USED].label) + (auto ? " · 자동 감지" : " · 수동 지정");
+  document.getElementById("verSel").value = VER;
+}
 function badge(txt, live){
   document.getElementById("srcbadge").innerHTML =
     `<span class="dot" style="background:${live?"var(--s-good)":"var(--s-warn)"}"></span>${esc(txt)}`;
@@ -1616,16 +1829,27 @@ async function boot(){
     if(!rows.length) throw new Error("empty");
     render(rows);
     badge("실시간 연동", true);
+    verBadge();
     document.getElementById("asof").textContent = "조회 " + new Date().toLocaleString("ko-KR");
   }catch(e){
-    render(relativizeDemo(SNAPSHOT));
+    VER_USED = VER === "auto" ? "v2" : VER;   /* 데모는 기본 V2 */
+    render(relativizeDemo(demoForVersion(SNAPSHOT, VER_USED)));
     badge(SHEET_ID ? "데모 데이터 (시트 접근 실패)" : "데모 데이터 (시트 미지정)", false);
     document.getElementById("asof").textContent = SHEET_ID
       ? "?sheet= 값과 시트 공개 설정을 확인하세요"
       : "URL 뒤에 ?sheet=<구글시트 ID> 를 붙이면 실시간 연동됩니다";
+    verBadge();
   }
 }
 document.getElementById("reload").onclick = boot;
+document.getElementById("verSel").onchange = e => {
+  VER = e.target.value;
+  const q = new URLSearchParams(location.search);
+  if(VER === "auto") q.delete("ver"); else q.set("ver", VER);
+  const url = location.pathname + (q.toString() ? "?" + q.toString() : "") + location.hash;
+  history.replaceState(null, "", url);
+  boot();
+};
 document.getElementById("theme").onclick = e => {
   const dark = document.documentElement.dataset.theme === "dark";
   document.documentElement.dataset.theme = dark ? "light" : "dark";

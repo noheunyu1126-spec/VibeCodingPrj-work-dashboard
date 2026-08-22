@@ -286,7 +286,8 @@
   <p>쓰던 시트가 없다면 준비된 양식으로 시작하세요. 열 순서와 드롭다운, 작성 규칙이 들어 있고
     데모 12건이 채워져 있어 그대로 열어보고 내용만 바꾸면 됩니다.</p>
   <div class="cta" style="margin-top:18px">
-    <a class="btn" href="template/업무보드_시트양식_데모.xlsx" download>시트 양식 내려받기 (.xlsx)</a>
+    <a class="btn" href="template/업무보드_시트양식_V2.xlsx" download>V2 양식 내려받기 (.xlsx)</a>
+    <a class="btn" href="template/업무보드_시트양식_V1.xlsx" download>V1 양식</a>
     <a class="btn" href="INTRO.html">한 장 요약 보기</a>
   </div>
   <p class="hint">내려받은 파일을 구글 드라이브에 올리고 <b>Google 스프레드시트로 열기</b> 를 누르면 바로 쓸 수 있습니다.</p>
@@ -362,9 +363,10 @@
     if(!src.value.trim()){ out.className = "out"; err.className = "err"; return; }
     if(!id){ out.className = "out"; err.className = "err on"; return; }
     err.className = "err";
-    var link = shown + "?sheet=" + id;
+    var g = (src.value.match(/[#?&]gid=(\d+)/) || [])[1] || "";
+    var link = shown + "?sheet=" + id + (g ? "&gid=" + g : "");
     urlBox.textContent = link;
-    openA.setAttribute("href", base ? base + "?sheet=" + id : "#");
+    openA.setAttribute("href", base ? base + "?sheet=" + id + (g ? "&gid=" + g : "") : "#");
     if(!base){ openA.style.opacity = ".5"; openA.style.pointerEvents = "none"; }
     out.className = "out on";
   }

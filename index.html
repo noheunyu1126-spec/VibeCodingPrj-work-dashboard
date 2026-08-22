@@ -164,6 +164,14 @@ h2{font-size:clamp(24px,3.4vw,33px);line-height:1.24;letter-spacing:-.028em;font
 .emsg{margin-top:13px;font-size:13.5px;color:var(--s-crit);display:none}
 .emsg.on{display:block}
 .bhint{font-size:12.5px;color:var(--ink-4);margin:13px 0 0}
+  .parsed{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+  .parsed span{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px;
+    background:var(--chip);color:var(--ink-3);border:1px solid var(--line);white-space:nowrap}
+  .parsed span b{color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-weight:600;font-size:11.5px}
+  .verpick{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3)}
+  .verpick > span{font-weight:600;white-space:nowrap}
+  .verpick select{font:inherit;font-size:13.5px;font-weight:600;padding:11px 13px;border-radius:11px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 
 /* ─── 기능 카드 ─── */
 .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:36px}
@@ -332,17 +340,25 @@ footer a:hover{color:var(--ink)}
 
   <div class="builder">
     <h3>접속 링크 만들기</h3>
-    <p class="bsub">구글시트 주소, 시트 ID, 이미 만든 링크 — 아무 형태로 넣어도 됩니다.</p>
+    <p class="bsub">구글시트 주소를 붙여넣으면 시트 ID와 탭 gid를 뽑아 접속 링크를 만들어 줍니다.
+      시트 ID만 넣어도, 이미 만든 링크를 다시 넣어도 됩니다.</p>
     <div class="field">
       <input id="src" type="text" spellcheck="false" autocomplete="off"
-             placeholder="https://docs.google.com/spreadsheets/d/....../edit">
+             placeholder="https://docs.google.com/spreadsheets/d/....../edit#gid=0">
     </div>
     <div class="emsg" id="err">시트 주소를 인식하지 못했습니다. <code>/d/</code> 가 포함된 전체 URL이나 시트 ID를 넣어 주세요.</div>
     <div class="result" id="out">
+      <div class="parsed" id="parsed"></div>
       <div class="rurl"><span id="url"></span></div>
       <div class="rrow">
         <a class="btn pri" id="open" target="_blank" rel="noopener">이 링크로 열기 →</a>
         <button class="btn" id="copy" type="button">링크 복사</button>
+        <label class="verpick"><span>데이터 형식</span>
+          <select id="verSel">
+            <option value="auto">자동 감지</option>
+            <option value="v2">V2 · 15열 확장형</option>
+            <option value="v1">V1 · 12열 기본형</option>
+          </select></label>
       </div>
     </div>
     <p class="bhint" id="hint"></p>
@@ -465,6 +481,10 @@ footer a:hover{color:var(--ink)}
     <div class="fcard"><div class="fico" style="background:linear-gradient(135deg,#f0a33c,var(--s-orange))">＋</div>
       <h3>시트를 고쳐도 안 깨집니다</h3>
       <p>상태 드롭다운에 새 값을 추가하면 보드 열·필터·범례에 자동으로 나타나고 <b>NEW</b>로 표시됩니다.</p></div>
+    <div class="fcard"><div class="fico" style="background:linear-gradient(135deg,var(--a2),var(--a1))">V2</div>
+      <h3>두 가지 시트 형식을 지원합니다</h3>
+      <p>기본형(12열)과 확장형(15열 — 담당자·요청기관·요청구분·상하위 계층)을 <b>헤더만 보고 자동 판별</b>합니다.
+        상단에서 직접 고를 수도 있습니다.</p></div>
     <div class="fcard"><div class="fico" style="background:linear-gradient(135deg,var(--a3),#1f7a86)">↻</div>
       <h3>반복 업무도 같이 봅니다</h3>
       <p>주기와 마지막 처리 날짜만 적으면 다음 예정일을 계산해 <b>지연·오늘·이번 주</b>로 분류하고, 다음 14일 부하까지 보여줍니다.</p></div>
@@ -486,7 +506,8 @@ footer a:hover{color:var(--ink)}
     <p>열 순서와 드롭다운, 작성 규칙이 들어 있는 양식을 준비했습니다.
        데모 12건이 채워져 있어 그대로 열어보고 내용만 바꾸면 됩니다.</p>
     <div class="cta">
-      <a class="btn" href="template/업무보드_시트양식_데모.xlsx" download>시트 양식 내려받기 (.xlsx)</a>
+      <a class="btn" href="template/업무보드_시트양식_V2.xlsx" download>V2 양식 내려받기 (.xlsx)</a>
+      <a class="btn out" href="template/업무보드_시트양식_V1.xlsx" download>V1 양식</a>
       <a class="btn out" href="INTRO.html">한 장 요약 보기</a>
     </div>
   </div>
@@ -537,31 +558,52 @@ footer a:hover{color:var(--ink)}
   var src=document.getElementById("src"), out=document.getElementById("out"),
       err=document.getElementById("err"), urlBox=document.getElementById("url"),
       openA=document.getElementById("open"), copyB=document.getElementById("copy"),
-      hint=document.getElementById("hint"), pv=document.getElementById("pvurl");
+      hint=document.getElementById("hint"), pv=document.getElementById("pvurl"),
+      parsed=document.getElementById("parsed"), verSel=document.getElementById("verSel");
+  var esc = function(t){ return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
 
-  if(base) pv.textContent = base.replace(/^https?:\/\//,"") + "?sheet=1AbCdEf…";
+  if(base) pv.textContent = base.replace(/^https?:\/\//,"") + "?sheet=1AbCdEf…&gid=0";
   hint.textContent = isFile
     ? "로컬 파일로 열어 예시 주소를 보고 있습니다. 배포된 주소에서 열면 그 주소로 링크가 만들어집니다."
     : "만들어진 주소를 북마크해 두면 다음부터 한 번에 열립니다.";
 
   function extract(v){
-    v=(v||"").trim(); if(!v) return null;
-    var m=v.match(/\/d\/([A-Za-z0-9\-_]{15,})/);      if(m) return m[1];
-    m=v.match(/[?&]sheet=([A-Za-z0-9\-_]{15,})/);     if(m) return m[1];
-    if(/^[A-Za-z0-9\-_]{15,}$/.test(v)) return v;
-    return null;
+    v = (v || "").trim();
+    if(!v) return null;
+    let id = null, gid = "";
+    let m = v.match(/\/d\/([A-Za-z0-9\-_]{15,})/);            /* 구글시트 전체 URL */
+    if(m) id = m[1];
+    if(!id){ m = v.match(/[?&]sheet=([A-Za-z0-9\-_]{15,})/); if(m) id = m[1]; }  /* 이미 만든 링크 */
+    if(!id && /^[A-Za-z0-9\-_]{15,}$/.test(v)) id = v;          /* 시트 ID 만 */
+    if(!id) return null;
+    m = v.match(/[#?&]gid=(\d+)/);                              /* 탭 gid */
+    if(m) gid = m[1];
+    return {id: id, gid: gid};
+  }
+  function build(p){
+    const q = ["sheet=" + p.id];
+    if(p.gid) q.push("gid=" + p.gid);
+    const ver = verSel ? verSel.value : "auto";
+    if(ver !== "auto") q.push("ver=" + ver);
+    return "?" + q.join("&");
   }
   function render(){
-    var id=extract(src.value);
-    if(!src.value.trim()){ out.className="result"; err.className="emsg"; return; }
-    if(!id){ out.className="result"; err.className="emsg on"; return; }
-    err.className="emsg";
-    urlBox.textContent = shown + "?sheet=" + id;
-    if(base){ openA.setAttribute("href", base + "?sheet=" + id); }
-    else { openA.style.opacity=".45"; openA.style.pointerEvents="none"; }
-    out.className="result on";
+    const p = extract(src.value);
+    if(!src.value.trim()){ out.className = "result"; err.className = "emsg"; return; }
+    if(!p){ out.className = "result"; err.className = "emsg on"; return; }
+    err.className = "emsg";
+    const qs = build(p);
+    urlBox.textContent = shown + qs;
+    parsed.innerHTML = `<span>시트 ID <b>${esc(p.id.slice(0,10))}…</b></span>` +
+      (p.gid ? `<span>탭 gid <b>${esc(p.gid)}</b></span>`
+             : `<span>탭 <b>첫 번째 탭</b></span>`);
+    if(base){ openA.setAttribute("href", base + qs); }
+    else { openA.style.opacity = ".45"; openA.style.pointerEvents = "none"; }
+    out.className = "result on";
   }
   src.addEventListener("input", render);
+  if(verSel) verSel.addEventListener("change", render);
   copyB.addEventListener("click", function(){
     var t=urlBox.textContent;
     var done=function(){ copyB.textContent="복사했습니다"; setTimeout(function(){copyB.textContent="링크 복사";},1600); };
