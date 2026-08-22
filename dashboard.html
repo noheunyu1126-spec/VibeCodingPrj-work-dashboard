@@ -15,6 +15,7 @@
     --h-blue:#2a78d6; --h-orange:#eb6834; --h-aqua:#1baf7a; --h-yellow:#eda100;
     --h-magenta:#e87ba4; --h-green:#008300; --h-violet:#4a3aa7; --h-red:#e34948;
     --chip:#f0efec; --today:#eaf2fd;
+    --tint-crit:#fdf1f1; --tint-warn:#fff8ea; --tint-blue:#eff5fd;
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
@@ -26,6 +27,7 @@
     --h-blue:#3987e5; --h-orange:#d95926; --h-aqua:#199e70; --h-yellow:#c98500;
     --h-magenta:#d55181; --h-green:#008300; --h-violet:#9085e9; --h-red:#e66767;
     --chip:#242422; --today:#152438;
+    --tint-crit:#26161a; --tint-warn:#241d10; --tint-blue:#14202f;
   }
   *{box-sizing:border-box}
   body{
@@ -185,6 +187,98 @@
             font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums}
   .rday .cn.z{color:var(--muted);font-weight:500;background:transparent}
   .cyc{font-size:10px;font-weight:650;padding:2px 6px;border-radius:5px;background:var(--chip);color:var(--ink2);white-space:nowrap}
+  /* A. 급한 것 히어로 스트립 */
+  .hero-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .hs{border:1px solid var(--ring);border-radius:13px;padding:13px 15px;cursor:pointer;
+      position:relative;overflow:hidden;background:var(--surface);transition:transform .12s,box-shadow .12s}
+  .hs:hover{transform:translateY(-2px);box-shadow:0 10px 26px -10px rgba(0,0,0,.22)}
+  .hs.on{outline:2px solid var(--h-blue);outline-offset:-2px}
+  .hs .l{font-size:11.5px;font-weight:650;display:flex;align-items:center;gap:6px}
+  .hs .v{font-size:33px;font-weight:750;line-height:1.05;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .hs .s{font-size:11px;color:var(--muted);margin-top:1px}
+  .hs::after{content:"";position:absolute;inset:auto -20px -34px auto;width:86px;height:86px;border-radius:50%;opacity:.13}
+  .hs-crit{background:var(--tint-crit);border-color:color-mix(in srgb,var(--s-crit) 34%,transparent)}
+  .hs-crit .v,.hs-crit .l{color:var(--s-crit)} .hs-crit::after{background:var(--s-crit)}
+  .hs-warn{background:var(--tint-warn);border-color:color-mix(in srgb,var(--s-serious) 40%,transparent)}
+  .hs-warn .v,.hs-warn .l{color:var(--s-serious)} .hs-warn::after{background:var(--s-serious)}
+  .hs-blue{background:var(--tint-blue);border-color:color-mix(in srgb,var(--h-blue) 30%,transparent)}
+  .hs-blue .v,.hs-blue .l{color:var(--h-blue)} .hs-blue::after{background:var(--h-blue)}
+  .hs-mute .v{color:var(--ink)} .hs-mute .l{color:var(--ink2)}
+
+  /* D. 데이터 품질 배너 */
+  .qbanner{display:flex;gap:12px;align-items:flex-start;border-radius:12px;padding:13px 15px;margin-bottom:14px;
+    background:var(--tint-warn);border:1px solid color-mix(in srgb,var(--s-warn) 42%,transparent)}
+  .qbanner .ic{width:24px;height:24px;border-radius:7px;background:var(--s-warn);color:#0b0b0b;
+    display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;margin-top:1px}
+  .qbanner b{display:block;font-size:13px;font-weight:680}
+  .qbanner p{margin:2px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.55}
+  .qbanner p em{font-style:normal;font-weight:700;color:var(--ink)}
+  .qbanner .x{margin-left:auto;flex:none;border:0;background:none;color:var(--muted);cursor:pointer;
+    font-size:16px;line-height:1;padding:2px 4px}
+
+  /* C. 주목 스트립 */
+  .attn{margin-bottom:16px}
+  .attn h4{font-size:11.5px;font-weight:750;letter-spacing:.06em;color:var(--muted);margin:0 0 8px;
+    display:flex;align-items:center;gap:7px}
+  .attn h4 s{width:18px;height:2px;background:var(--s-crit);text-decoration:none;border-radius:1px}
+  .astrip{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+  .acard{flex:0 0 236px;border:1px solid color-mix(in srgb,var(--s-crit) 30%,transparent);
+    border-left:4px solid var(--s-crit);border-radius:11px;padding:11px 12px;background:var(--tint-crit);cursor:pointer}
+  .acard:hover{border-color:var(--s-crit)}
+  .acard .t{font-size:12.5px;font-weight:660;line-height:1.4;word-break:keep-all}
+  .acard .m{font-size:11px;color:var(--ink2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .acard .d{font-size:11px;font-weight:750;color:var(--s-crit);margin-top:6px}
+
+  /* B. 카드 위계 */
+  .tcard{padding-left:13px}
+  .tcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--sc,transparent)}
+  .tcard.late{background:var(--tint-crit);border-color:color-mix(in srgb,var(--s-crit) 32%,transparent)}
+  .tcard.today{background:var(--tint-warn);border-color:color-mix(in srgb,var(--s-serious) 36%,transparent)}
+  .thead{display:flex;gap:8px;align-items:flex-start}
+  .thead .tt{flex:1;min-width:0}
+  .pdot{width:6px;height:6px;border-radius:50%;background:var(--s-crit);flex:none;margin-top:6px}
+  .dd{flex:none;text-align:right;min-width:52px}
+  .dd .big{font-size:15.5px;font-weight:780;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .dd .cap{display:block;font-size:9.5px;color:var(--muted);font-weight:650;margin-top:1px}
+  .dd.late .big{color:var(--s-crit)} .dd.today .big{color:var(--s-serious)}
+  .dd.soon .big{color:var(--h-blue)} .dd.none .big{color:var(--muted);font-size:11.5px;font-weight:600}
+  .av{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:9.5px;
+    font-weight:750;color:#fff;flex:none;letter-spacing:-.02em}
+
+  /* F. 부모ID 계층 보기 */
+  .tree{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:980px){ .tree{grid-template-columns:1fr} }
+  .grp{border:1px solid var(--ring);border-radius:13px;background:var(--surface);overflow:hidden}
+  .grp.wide{grid-column:1/-1}
+  .ghead{display:flex;gap:10px;align-items:flex-start;padding:13px 14px;border-bottom:1px solid var(--grid);
+    background:color-mix(in srgb,var(--h-blue) 5%,var(--surface));cursor:pointer}
+  .ghead:hover{background:color-mix(in srgb,var(--h-blue) 9%,var(--surface))}
+  .ghead .gt{flex:1;min-width:0}
+  .gid{font-size:10px;font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-weight:650}
+  .gn{font-size:13.5px;font-weight:700;line-height:1.35;word-break:keep-all;margin-top:1px}
+  .gm{font-size:11px;color:var(--muted);margin-top:3px}
+  .meter{margin-top:7px;display:flex;align-items:center;gap:8px}
+  .mtrack{flex:1;height:6px;border-radius:3px;background:var(--chip);overflow:hidden;min-width:60px}
+  .mfill{height:6px;border-radius:3px;background:var(--s-good)}
+  .meter em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .kid{display:grid;grid-template-columns:16px 1fr auto;gap:9px;align-items:center;
+    padding:9px 14px;border-top:1px solid var(--grid);font-size:12px;cursor:pointer}
+  .kid:hover{background:var(--chip)}
+  .kid .br{color:var(--muted);font-size:11px;text-align:center}
+  .kid .kt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .kid.done .kt{color:var(--muted);text-decoration:line-through}
+  .kid .ks{display:flex;gap:5px;align-items:center;flex:none}
+  .solo{padding:13px 14px}
+  .solo h5{font-size:11.5px;font-weight:750;letter-spacing:.05em;color:var(--muted);margin:0 0 9px}
+  .sologrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+
+  /* E. 모션 */
+  @media (prefers-reduced-motion: no-preference){
+    .anim .tcard,.anim .hs,.anim .acard,.anim .grp{animation:riseIn .4s cubic-bezier(.2,.7,.3,1) both}
+    @keyframes riseIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+    .anim .bdg.pulse{animation:pulseRing 2.1s ease-in-out infinite}
+    @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(208,59,59,.5)}50%{box-shadow:0 0 0 5px rgba(208,59,59,0)}}
+  }
   /* board */
   .bbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
   .bstat{display:flex; gap:14px; flex-wrap:wrap; margin-left:auto; font-size:12px; color:var(--ink2)}
@@ -283,6 +377,9 @@
 
 <!-- ============ 보드 ============ -->
 <section id="viewBoard">
+  <div id="qBanner"></div>
+  <div class="hero-strip" id="bHero"></div>
+  <div class="attn hidden" id="bAttn"><h4><s></s><span id="bAttnT"></span></h4><div class="astrip" id="bAttnL"></div></div>
   <div class="card">
     <div class="bbar">
       <select id="bGroup">
@@ -293,6 +390,7 @@
         <option value="owner">열 기준: 담당자</option>
         <option value="org">열 기준: 요청기관</option>
         <option value="reqType">열 기준: 요청구분</option>
+        <option value="tree">보기: 부모ID 계층</option>
       </select>
       <select id="bCat" class="hidden"><option value="">분류 전체</option></select>
       <input type="search" id="bQ" placeholder="태스크 · 내용 검색">
@@ -1363,14 +1461,48 @@ function renderCatChips(chipsId, selectId, onPick){
 }
 
 /* ---------- 보드 (워킹 화면) ---------- */
-const BOARD = {by:"status", cat:"", q:"", stale:false};
+const BOARD = {by:"status", cat:"", q:"", stale:false, focus:""};
 const staleDays = r => r.lastUpdate ? daysBetween(r.lastUpdate, TODAY) : null;
+/* 종결된 건은 모든 위험 판정에서 제외 */
+const isClosed = r => r.group === "완료" || r.group === "중단" || !!r.done;
+/* 마감 D-day: 처리예정일자 또는 루틴 다음 예정일 중 더 급한 쪽 */
+function dueDays(r){
+  const a = (!isClosed(r) && r.deadline) ? daysBetween(TODAY, r.deadline) : null;
+  const b = (r.isRoutine && r.rBucket && r.rBucket !== "never" && r.nextDue) ? r.rDays : null;
+  if(a === null && b === null) return (r.isRoutine && r.rBucket === "never") ? "never" : null;
+  if(a === null) return b;
+  if(b === null) return a;
+  return Math.min(a, b);
+}
+const FOCUS = {
+  late:  r => { const d = dueDays(r); return typeof d === "number" && d < 0; },
+  today: r => dueDays(r) === 0,
+  soon:  r => { const d = dueDays(r); return typeof d === "number" && d > 0 && d <= 7; },
+  stale: r => !isClosed(r) && (staleDays(r) === null || staleDays(r) >= 7)
+};
 function boardRows(){
   const q = BOARD.q.trim().toLowerCase();
   return ROWS.filter(r =>
     (!BOARD.cat || r.catL === BOARD.cat) &&
     (!BOARD.stale || (staleDays(r) === null || staleDays(r) >= 14)) &&
+    (!BOARD.focus || FOCUS[BOARD.focus](r)) &&
     (!q || [r.task, r.detail, r.progress, r.owner, r.org, r.reqType].join(" ").toLowerCase().includes(q)));
+}
+/* 담당자 아바타 색 — 이름 해시 */
+const AV_HUES = ["#3b5bdb","#0d8f7a","#b45309","#9333ea","#be123c","#0369a1","#4d7c0f","#7c2d12"];
+function avatar(name){
+  if(!name) return "";
+  let h = 0; for(let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) % 9973;
+  return `<span class="av" style="background:${AV_HUES[h % AV_HUES.length]}">${esc(name.trim().slice(-2))}</span>`;
+}
+function ddText(r){
+  const d = dueDays(r);
+  if(isClosed(r)) return {big:"종결", cap:"", cls:"none"};
+  if(d === "never") return {big:"미실행", cap:"", cls:"late"};
+  if(d === null) return {big:"미입력", cap:"", cls:"none"};
+  if(d < 0)  return {big:Math.abs(d)+"일", cap:"지연", cls:"late"};
+  if(d === 0) return {big:"오늘", cap:"", cls:"today"};
+  return {big:"D-"+d, cap:"", cls:d <= 7 ? "soon" : "none"};
 }
 function lastMemo(r){
   const src = (r.progress || "").split("\n").filter(Boolean);
@@ -1380,6 +1512,31 @@ function lastMemo(r){
 }
 function renderBoard(){
   const rows = boardRows();
+  /* F. 계층 보기 — 열 대신 그룹 카드로 */
+  if(BOARD.by === "tree"){
+    const host = document.getElementById("board");
+    host.className = "anim";
+    host.innerHTML = renderTree(rows);
+    const sg = document.getElementById("soloGrid");
+    if(sg){
+      const shown = new Set();
+      rows.filter(r => r.children.length).forEach(p => { shown.add(p.no); p.children.forEach(c => shown.add(c.no)); });
+      sg.innerHTML = rows.filter(r => !shown.has(r.no)).map(r => {
+        const d = ddText(r);
+        return `<article class="tcard${d.cls === "late" ? " late" : d.cls === "today" ? " today" : ""}"
+                  data-no="${r.no}" style="--sc:${r.m.c}">
+          <div class="thead">${r.prioL === "상" ? '<span class="pdot"></span>' : ""}
+            <div class="tt"><div style="font-size:12.5px;font-weight:660;line-height:1.42;word-break:keep-all">${esc(r.task || "(제목 없음)")}</div></div>
+            <div class="dd ${d.cls}"><span class="big">${d.big}</span>${d.cap ? `<span class="cap">${d.cap}</span>` : ""}</div></div>
+          <div class="cfoot">${r.owner ? avatar(r.owner) : ""}
+            <span class="bdg"><span class="ico" style="color:${r.m.c}">${r.m.i}</span> ${esc(r.statusL)}</span>
+            <span class="bdg">${esc(r.catL)}</span></div></article>`;
+      }).join("");
+    }
+    host.querySelectorAll("[data-no]").forEach(el =>
+      el.addEventListener("click", ev => { ev.stopPropagation(); openDrawer(+el.dataset.no); }));
+    return;
+  }
   let cols;
   if(BOARD.by === "status")
     cols = STATUSES.map(s => ({k:s, c:meta(s).c, i:meta(s).i, rs:rows.filter(r => r.statusL === s)}));
@@ -1403,6 +1560,7 @@ function renderBoard(){
       .map(c => ({k:c, c:"var(--h-blue)", i:"▣", rs:rows.filter(r => r.catL === c)}))
       .sort((a,b) => b.rs.length - a.rs.length);
 
+  renderQuality(); renderHero(); renderAttn();
   const upToday = ROWS.filter(r => r.lastUpdate && daysBetween(r.lastUpdate, TODAY) <= 7).length;
   const stale = ROWS.filter(r => staleDays(r) !== null && staleDays(r) >= 14).length;
   const norec = ROWS.filter(r => staleDays(r) === null).length;
@@ -1416,33 +1574,32 @@ function renderBoard(){
   const filtered = !!(BOARD.cat || BOARD.q.trim() || BOARD.stale);
   if(filtered) cols = cols.filter(c => c.rs.length);
 
+  document.getElementById("board").className = "board anim";
   document.getElementById("board").innerHTML = cols.map(col => {
     const rs = col.rs.slice().sort((a,b) => (b.lastUpdate?+b.lastUpdate:0) - (a.lastUpdate?+a.lastUpdate:0));
     const cards = rs.map(r => {
       const sd = staleDays(r);
       const upd = sd === null ? `<span class="bdg">기록 없음</span>`
-        : sd >= 14 ? `<span class="bdg old">${sd}일 무소식</span>`
+        : sd >= 14 ? `<span class="bdg old pulse">${sd}일 무소식</span>`
         : sd >= 7  ? `<span class="bdg stale">${sd}일 전</span>`
         : `<span class="bdg">${sd === 0 ? "오늘" : sd + "일 전"}</span>`;
       const memo = lastMemo(r);
-      return `<article class="tcard" data-no="${r.no}">
-        <div class="tt">${esc(r.task || "(제목 없음)")}</div>
+      const d = ddText(r);
+      const tint = d.cls === "late" ? " late" : d.cls === "today" ? " today" : "";
+      const badges = [upd];
+      if(BOARD.by !== "status") badges.push(`<span class="bdg"><span class="ico" style="color:${r.m.c}">${r.m.i}</span> ${esc(r.statusL)}</span>`);
+      if(BOARD.by !== "cat") badges.push(`<span class="bdg">${esc(r.catL)}</span>`);
+      if(SCHEMAS[VER_USED].has.parent && r.children.length) badges.push(`<span class="bdg" style="font-weight:650">⌄ 하위 ${r.children.length}</span>`);
+      if(r.isRoutine) badges.push(`<span class="bdg" style="font-weight:650">↻ ${esc(r.cyc.short)}</span>`);
+      return `<article class="tcard${tint}" data-no="${r.no}" style="--sc:${r.m.c}">
+        <div class="thead">
+          ${r.prioL === "상" ? '<span class="pdot" title="우선순위 상"></span>' : ""}
+          <div class="tt"><div class="tt-t" style="font-size:12.5px;font-weight:660;line-height:1.42;word-break:keep-all">${esc(r.task || "(제목 없음)")}</div></div>
+          <div class="dd ${d.cls}"><span class="big">${d.big}</span>${d.cap ? `<span class="cap">${d.cap}</span>` : ""}</div>
+        </div>
         ${memo ? `<div class="memo">${esc(memo)}</div>` : ""}
-        <div class="cfoot">${upd}
-          ${BOARD.by !== "status" ? `<span class="bdg"><span class="ico" style="color:${r.m.c}">${r.m.i}</span> ${esc(r.statusL)}</span>` : ""}
-          ${BOARD.by !== "cat" ? `<span class="bdg">${esc(r.catL)}</span>` : ""}
-          ${(SCHEMAS[VER_USED].has.parent && r.children.length)
-              ? `<span class="bdg" style="font-weight:650">⌄ 하위 ${r.children.length}</span>` : ""}
-          ${(r.owner && BOARD.by !== "owner") ? `<span class="bdg">◍ ${esc(r.owner)}</span>` : ""}
-          ${r.prioL !== "미지정" ? `<span class="bdg pri">우선 ${esc(r.prioL)}</span>` : ""}
-          ${r.deadline ? `<span class="bdg">예정 ${md(r.deadline)}</span>` : ""}
-          ${r.isRoutine ? `<span class="bdg" style="background:${
-              r.rBucket === "late" ? "var(--s-crit);color:#fff" :
-              r.rBucket === "today" ? "var(--s-serious);color:#0b0b0b" : "var(--chip)"
-            };font-weight:650">↻ ${esc(r.cyc.short)}${
-              r.rBucket === "late" ? " " + Math.abs(r.rDays) + "일 지연" :
-              r.rBucket === "today" ? " 오늘" :
-              r.nextDue ? " " + md(r.nextDue) : " 미실행"}</span>` : ""}
+        <div class="cfoot">${r.owner && BOARD.by !== "owner" ? avatar(r.owner) : ""}${badges.join("")}
+          ${r.prioL !== "미지정" && r.prioL !== "상" ? `<span class="bdg">우선 ${esc(r.prioL)}</span>` : ""}
         </div></article>`;
     }).join("");
     return `<div class="col">
@@ -1451,8 +1608,10 @@ function renderBoard(){
       <div class="colbody">${cards || `<div class="colempty">항목 없음</div>`}</div></div>`;
   }).join("");
 
-  document.querySelectorAll("#board .tcard").forEach(c =>
-    c.addEventListener("click", () => openDrawer(+c.dataset.no)));
+  document.querySelectorAll("#board .tcard").forEach((c,i) => {
+    c.addEventListener("click", () => openDrawer(+c.dataset.no));
+    c.style.animationDelay = Math.min(i,24) * 22 + "ms";
+  });
 }
 /* 상세 패널 */
 function openDrawer(no){
@@ -1499,6 +1658,113 @@ document.getElementById("bGroup").onchange = e => { BOARD.by = e.target.value; r
 document.getElementById("bCat").onchange   = e => { BOARD.cat = e.target.value; renderBoard(); };
 document.getElementById("bStale").onchange = e => { BOARD.stale = e.target.checked; renderBoard(); };
 document.getElementById("bQ").oninput      = e => { BOARD.q = e.target.value; renderBoard(); };
+
+/* A. 급한 것 히어로 스트립 */
+const HERO = [
+  ["late","지연","마감이 지난 건","hs-crit","●"],
+  ["today","오늘","오늘 처리할 건","hs-warn","●"],
+  ["soon","임박 7일","이번 주 안","hs-blue","●"],
+  ["stale","무소식","7일+ 기록 없음","hs-mute","●"]
+];
+function renderHero(){
+  const el = document.getElementById("bHero");
+  el.innerHTML = HERO.map(([k,label,sub,cls,ic]) => {
+    const n = ROWS.filter(FOCUS[k]).length;
+    return `<div class="hs ${cls}${BOARD.focus === k ? " on" : ""}" data-f="${k}"
+      title="누르면 ${label} 항목만 보기">
+      <div class="l"><span class="ico">${ic}</span>${label}</div>
+      <div class="v">${n}</div><div class="s">${sub}</div></div>`;
+  }).join("");
+  el.querySelectorAll(".hs").forEach(c => c.addEventListener("click", () => {
+    BOARD.focus = BOARD.focus === c.dataset.f ? "" : c.dataset.f;
+    renderBoard();
+  }));
+}
+/* C. 주목 스트립 — 지연·오늘만 */
+function renderAttn(){
+  const box = document.getElementById("bAttn");
+  const items = ROWS.filter(r => FOCUS.late(r) || FOCUS.today(r))
+    .sort((a,b) => { const x = dueDays(a), y = dueDays(b);
+      return (typeof x === "number" ? x : -99) - (typeof y === "number" ? y : -99); });
+  if(!items.length){ box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  document.getElementById("bAttnT").textContent = `지금 봐야 하는 ${items.length}건`;
+  document.getElementById("bAttnL").innerHTML = items.slice(0,12).map(r => {
+    const d = ddText(r);
+    return `<div class="acard" data-no="${r.no}">
+      <div class="t">${esc(r.task || "(제목 없음)")}</div>
+      <div class="m">${r.owner ? esc(r.owner) + " · " : ""}${esc(r.statusL)}${r.catL !== "미분류" ? " · " + esc(r.catL) : ""}</div>
+      <div class="d">${d.cls === "late" ? (d.big === "미실행" ? "루틴 미실행" : d.big + " 지연") : "오늘 마감"}</div></div>`;
+  }).join("");
+  box.querySelectorAll(".acard").forEach(c => c.addEventListener("click", () => openDrawer(+c.dataset.no)));
+}
+/* D. 데이터 품질 배너 */
+let Q_HIDDEN = false;
+function renderQuality(){
+  const el = document.getElementById("qBanner");
+  if(Q_HIDDEN){ el.innerHTML = ""; return; }
+  const open = ROWS.filter(r => !isClosed(r));
+  const noDue = open.filter(r => !r.deadline && !r.isRoutine).length;
+  const noRun = ROWS.filter(r => r.isRoutine && !r.lastRunD).length;
+  const noMemo = open.filter(r => !r.progress.trim()).length;
+  const noStatus = ROWS.filter(r => r.statusL === "상태 미기입").length;
+  const parts = [];
+  if(noDue)   parts.push(`처리예정일자 <em>${noDue}건 미입력</em>`);
+  if(noRun)   parts.push(`루틴 최근수행일 <em>${noRun}건 미입력</em>`);
+  if(noMemo)  parts.push(`진행 메모 없는 건 <em>${noMemo}건</em>`);
+  if(noStatus)parts.push(`상태 <em>${noStatus}건 미기입</em>`);
+  if(!parts.length){ el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="qbanner"><div class="ic">!</div><div>
+      <b>입력이 비어 있어 화면이 덜 채워집니다</b>
+      <p>${parts.join(" · ")} — 채우면 D-day · 캘린더 · 지연 판정이 켜집니다.</p></div>
+      <button class="x" id="qx" title="닫기">✕</button></div>`;
+  document.getElementById("qx").onclick = () => { Q_HIDDEN = true; renderQuality(); };
+}
+/* F. 부모ID 계층 보기 */
+function renderTree(rows){
+  const parents = rows.filter(r => r.children.length);
+  const shown = new Set();
+  parents.forEach(p => { shown.add(p.no); p.children.forEach(c => shown.add(c.no)); });
+  const solo = rows.filter(r => !shown.has(r.no));
+  const grp = parents.map(pt => {
+    const ks = pt.children.slice().sort((a,b) => String(a.id).localeCompare(String(b.id)));
+    const dn = ks.filter(k => k.group === "완료").length;
+    const pct = ks.length ? Math.round(dn / ks.length * 100) : 0;
+    const worst = ks.concat([pt]).filter(x => FOCUS.late(x))
+      .map(x => dueDays(x)).filter(v => typeof v === "number").sort((a,b) => a - b)[0];
+    const pd = ddText(pt);
+    return `<div class="grp">
+      <div class="ghead" data-no="${pt.no}">
+        <div class="gt">
+          ${pt.id ? `<div class="gid">${esc(pt.id)}</div>` : ""}
+          <div class="gn">${esc(pt.task || "(제목 없음)")}</div>
+          <div class="gm">${esc(pt.statusL)}${pt.owner ? " · " + esc(pt.owner) : ""} · 하위 ${ks.length}건${
+            worst !== undefined ? ` · <span style="color:var(--s-crit);font-weight:700">지연 ${Math.abs(worst)}일 포함</span>` : ""}</div>
+          <div class="meter"><div class="mtrack"><div class="mfill" style="width:${pct}%"></div></div>
+            <em>${dn}/${ks.length} 완료</em></div>
+        </div>
+        <div class="dd ${pd.cls}"><span class="big">${pd.big}</span>${pd.cap ? `<span class="cap">${pd.cap}</span>` : ""}</div>
+      </div>
+      ${ks.map((k,i) => {
+        const kd = ddText(k);
+        return `<div class="kid${k.group === "완료" ? " done" : ""}" data-no="${k.no}">
+          <span class="br">${i === ks.length-1 ? "└" : "├"}</span>
+          <span class="kt">${esc(k.task || "(제목 없음)")}</span>
+          <span class="ks">${k.owner ? avatar(k.owner) : ""}
+            <span class="bdg" style="border-color:transparent;background:color-mix(in srgb,${k.m.c} 16%,transparent);color:var(--ink2)">${esc(k.statusL)}</span>
+            <span class="bdg${kd.cls === "late" ? " old" : kd.cls === "today" ? " stale" : ""}">${kd.big}${kd.cap ? " " + kd.cap : ""}</span>
+          </span></div>`;
+      }).join("")}
+    </div>`;
+  }).join("");
+  const note = parents.length ? "" :
+    `<div class="grp wide"><div class="solo"><div class="empty" style="text-align:center">
+      <b style="color:var(--ink)">부모ID가 입력된 행이 없습니다.</b><br>
+      V2 시트의 <b style="color:var(--ink)">부모ID(C열)</b> 에 상위 업무의 ID를 적으면 여기에 그룹으로 묶입니다.
+     </div></div></div>`;
+  return `<div class="tree">${note}${grp}${solo.length ? `<div class="grp wide"><div class="solo">
+    <h5>단독 업무 ${solo.length}건</h5><div class="sologrid" id="soloGrid"></div></div></div>` : ""}</div>`;
+}
 
 /* ---------- 루틴 화면 ---------- */
 function routineRows(){ return ROWS.filter(r => r.isRoutine); }
