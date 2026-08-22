@@ -321,6 +321,36 @@
   .drawer .sec .txt{font-size:12.5px; white-space:pre-line; line-height:1.6; color:var(--ink2);
                     background:var(--chip); border-radius:10px; padding:12px 14px}
 
+  /* 루틴 메모지 */
+  .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:14px}
+  .note-pad{position:relative;border-radius:3px 3px 10px 10px;padding:26px 15px 15px;
+    background:linear-gradient(180deg, color-mix(in srgb,var(--s-warn) 16%,var(--surface)) 0 34px,
+                                        color-mix(in srgb,var(--s-warn) 7%,var(--surface)) 34px);
+    border:1px solid color-mix(in srgb,var(--s-warn) 30%,transparent);
+    box-shadow:0 8px 18px -10px rgba(0,0,0,.30), 0 1px 0 rgba(255,255,255,.35) inset}
+  .note-pad::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%) rotate(-1.2deg);
+    width:56px;height:13px;border-radius:2px;background:color-mix(in srgb,var(--s-warn) 42%,transparent);
+    box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .note-pad:nth-child(3n+2){transform:rotate(-.5deg)}
+  .note-pad:nth-child(3n)  {transform:rotate(.45deg)}
+  .note-pad h4{margin:0 0 3px;font-size:12.5px;font-weight:750;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:6px}
+  .note-pad .sub{font-size:10.5px;color:var(--muted);font-weight:650;margin-bottom:9px}
+  .note-pad ul{list-style:none;margin:0;padding:0}
+  .note-pad li{font-size:12px;line-height:1.5;padding:5px 0;border-top:1px dashed color-mix(in srgb,var(--s-warn) 34%,transparent);
+    display:flex;gap:7px;align-items:flex-start}
+  .note-pad li:first-child{border-top:0}
+  .note-pad li .bx{flex:none;width:12px;height:12px;border-radius:3px;margin-top:3px;
+    border:1.5px solid color-mix(in srgb,var(--ink) 32%,transparent)}
+  .note-pad li .tx{min-width:0;word-break:keep-all}
+  .note-pad li .dt{margin-left:auto;flex:none;font-size:10px;color:var(--muted);font-weight:650;font-variant-numeric:tabular-nums}
+  .note-pad li.today .bx{border-color:var(--s-serious);background:color-mix(in srgb,var(--s-serious) 22%,transparent)}
+  .note-pad li.today .dt{color:var(--s-serious);font-weight:750}
+  .note-pad li.past .dt{color:var(--ink2)}
+  .note-today{border-color:color-mix(in srgb,var(--s-serious) 46%,transparent);
+    background:linear-gradient(180deg, color-mix(in srgb,var(--s-serious) 18%,var(--surface)) 0 34px,
+                                        color-mix(in srgb,var(--s-serious) 8%,var(--surface)) 34px)}
+  .note-today::before{background:color-mix(in srgb,var(--s-serious) 44%,transparent)}
   /* 업무일지 */
   .lgforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:14px}
   .lgf{display:block}
@@ -336,10 +366,15 @@
   .lgbtns{display:flex;gap:8px;flex-wrap:wrap}
   .lgbtns button.lgpri{background:var(--ink);color:var(--surface);border-color:var(--ink);font-weight:650}
   #lgTable td{font-size:12px;vertical-align:top}
-  #lgTable td.body{white-space:pre-wrap;line-height:1.62;min-width:420px;font-size:12px}
-  #lgTable td.gubun{font-weight:700;white-space:nowrap}
-  #lgTable td.gubun.plan{color:var(--h-blue)}
+  #lgTable td.body{white-space:pre-wrap;line-height:1.62;min-width:330px;font-size:12px;
+                   border-left:3px solid var(--grid);padding-left:11px}
+  #lgTable td.body.act{border-left-color:var(--s-good)}
+  #lgTable td.body.plan{border-left-color:var(--h-blue)}
+  #lgTable td.body .who{display:block;color:var(--muted);font-size:11px;letter-spacing:.01em;
+                        margin-bottom:6px;padding-bottom:5px;border-bottom:1px dashed var(--grid)}
+  #lgTable td.body.dim{color:var(--muted)}
   #lgTable th{white-space:nowrap}
+  #lgTable th.act{color:var(--s-good)} #lgTable th.plan{color:var(--h-blue)}
   /* calendar */
   .calbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
   .calbar .mon{font-size:17px;font-weight:700;min-width:126px;font-variant-numeric:tabular-nums}
@@ -574,7 +609,7 @@
         <option value="one">행 분리: 없음 (한 행)</option>
       </select>
       <select id="lgOwner"><option value="">담당자 전체</option></select>
-      <label class="lgck"><input type="checkbox" id="lgPrefix" checked> 업무명에 <code>(사업)</code> 붙이기</label>
+      <label class="lgck"><input type="checkbox" id="lgWho" checked> 업무내용에 <strong>작업일자·담당자</strong> 기재</label>
       <label class="lgck"><input type="checkbox" id="lgMemo" checked> 실적에 메모 문장 포함</label>
       <label class="lgck"><input type="checkbox" id="lgRoutine" checked> 계획에 루틴 포함</label>
       <span class="count" id="lgCount"></span>
@@ -582,7 +617,8 @@
 
     <div class="lgbtns">
       <button class="lgpri" id="lgCopyAll">표 전체 복사 (시트에 붙여넣기)</button>
-      <button id="lgCopyBody">업무내용만 복사</button>
+      <button id="lgCopyAct">실적만 복사</button>
+      <button id="lgCopyPlan">계획만 복사</button>
       <button id="lgCsv">CSV 내려받기</button>
       <button id="lgPreset">기간 되돌리기</button>
     </div>
@@ -591,10 +627,11 @@
 
   <div class="card">
     <h2>미리보기</h2>
-    <p class="note">셀 안의 줄바꿈까지 그대로 복사됩니다. 구글시트·엑셀에 붙여넣으면 한 셀에 들어갑니다.</p>
+    <p class="note"><strong>실적</strong>과 <strong>계획</strong>을 나란히 두어 한 업무구분을 한 줄에서 비교합니다.
+      작업일자·담당자는 각 칸 맨 위와 항목 뒤에 함께 적힙니다. 셀 안의 줄바꿈까지 그대로 복사됩니다.</p>
     <div class="tblwrap" style="max-height:640px">
       <table id="lgTable">
-        <thead><tr><th>구분</th><th>업무명</th><th>분류명</th><th>업무내용</th><th>작업일자</th><th>담당자</th><th>비고</th></tr></thead>
+        <thead><tr><th>업무명</th><th>분류명</th><th class="act">실적</th><th class="plan">계획</th></tr></thead>
         <tbody id="lgBody"></tbody>
       </table>
     </div>
@@ -646,6 +683,11 @@
     <div class="calgrid" id="calGrid"></div>
     <div class="legend" id="calLegend" style="margin:14px 0 0"></div>
     <p class="note" id="calNote" style="margin:10px 0 0"></p>
+  </div>
+  <div class="card mb" id="rnoteCard">
+    <h2>루틴 메모 <span style="font-weight:400;color:var(--muted);font-size:11.5px">— 반복되는 일은 캘린더에 뿌리지 않고 여기에 적어 둡니다</span></h2>
+    <p class="note">시트 <strong>반복주기</strong> 열에 값이 있는 업무입니다. 지연으로 집계하지 않습니다.</p>
+    <div id="rnote"></div>
   </div>
   <div class="card">
     <h2 id="calDayTitle">날짜를 선택하세요</h2>
@@ -1979,16 +2021,14 @@ const CAL_SRC = {
   deadline: {n:"처리예정일자", c:"var(--h-blue)"},
   doneDate: {n:"처리일자",     c:"var(--s-good)"},
   reqD:     {n:"요청 일자",    c:"var(--h-violet)"},
-  stamps:   {n:"업데이트 기록", c:"var(--h-magenta)"},
-  routine:  {n:"루틴 반복",     c:"var(--h-aqua)"}
-};
+  stamps:   {n:"업데이트 기록", c:"var(--h-magenta)"}
+};   /* 반복 루틴은 캘린더에 뿌리지 않고 아래 '루틴 메모'로 따로 적어 둔다 */
 const CAL = {y:TODAY.getFullYear(), m:TODAY.getMonth(), status:"", sel:null,
              view:"month", on:{}, picked:false};
 function weekNo(d){ const a = new Date(d.getFullYear(),0,1);
   return Math.ceil(((d - a)/86400000 + a.getDay() + 1)/7); }
 function srcCount(k){
   if(k === "stamps")  return ROWS.reduce((a,r) => a + r.stamps.length, 0);
-  if(k === "routine") return ROWS.filter(r => r.isRoutine && r.cyc && r.cyc.kind !== "free").length;
   return ROWS.filter(r => r[k]).length;
 }
 function calEvents(a, b){
@@ -1998,12 +2038,6 @@ function calEvents(a, b){
     Object.keys(CAL_SRC).forEach(k => {
       if(!CAL.on[k]) return;
       if(k === "stamps"){ r.stamps.forEach(d => { if(d >= a && d <= b) out.push({d, r, k}); }); }
-      else if(k === "routine"){
-        if(!r.isRoutine || !r.cyc || r.cyc.kind === "free") return;
-        let seed = r.lastRunD || (function(){ const x = new Date(a); x.setDate(a.getDate()-1); return x; })();
-        if(seed > b) return;
-        occurrences(r.cyc, seed, a, b).forEach(d => out.push({d, r, k}));
-      }
       else if(r[k] && r[k] >= a && r[k] <= b) out.push({d:r[k], r, k});
     });
   });
@@ -2016,12 +2050,12 @@ function isOverdueEv(e){
 function evLine(e){
   const od = isOverdueEv(e);
   const dn = e.k === "doneDate" || (e.k === "deadline" && isClosed(e.r));
-  return `<div class="ev${e.k === "routine" ? " rt" : ""}${od ? " od" : ""}${dn ? " dn" : ""}"
+  return `<div class="ev${od ? " od" : ""}${dn ? " dn" : ""}"
     ><i style="background:${CAL_SRC[e.k].c}"></i><span>${esc(e.r.task || "(제목 없음)")}</span></div>`;
 }
 function renderCalendar(){
   if(!CAL.picked){
-    const pri = ["deadline","routine","stamps","doneDate","reqD"];
+    const pri = ["deadline","stamps","doneDate","reqD"];
     const has = pri.filter(k => srcCount(k) > 0);
     (has.length ? has.slice(0,3) : ["deadline"]).forEach(k => CAL.on[k] = true);
     CAL.picked = true;
@@ -2031,7 +2065,7 @@ function renderCalendar(){
       const n = srcCount(k);
       return `<button type="button" class="sc${CAL.on[k] ? " on" : ""}" data-s="${k}"
         style="${CAL.on[k] ? `color:${CAL_SRC[k].c}` : ""}">
-        <i style="background:${CAL_SRC[k].c}${k === "routine" ? ";border-radius:50%" : ""}"></i>${CAL_SRC[k].n}
+        <i style="background:${CAL_SRC[k].c}"></i>${CAL_SRC[k].n}
         <span class="k">${n}</span></button>`;
     }).join("");
 
@@ -2123,6 +2157,7 @@ function renderCalendar(){
     ? "위에서 표시 기준을 하나 이상 선택하세요."
     : (evs.length ? "" : "선택한 기준에 해당하는 날짜 값이 없습니다. 다른 기준을 켜거나 시트에 날짜를 입력하세요.");
 
+  renderRoutineNote();
   document.getElementById("calSrc").querySelectorAll(".sc").forEach(btn =>
     btn.addEventListener("click", () => { CAL.on[btn.dataset.s] = !CAL.on[btn.dataset.s]; renderCalendar(); }));
   document.getElementById("calView").querySelectorAll("button").forEach(btn => {
@@ -2140,7 +2175,7 @@ function showDay(d, evs){
     return `<li data-no="${r.no}" style="cursor:pointer">
       <span class="risk-chip" style="background:${r.m.c};color:#fff"><span class="ico">${r.m.i}</span>${esc(r.statusL)}</span>
       <span class="li-body"><span class="li-title">${esc(r.task || "(제목 없음)")}</span>
-      <span class="li-meta"><i style="display:inline-block;width:7px;height:7px;border-radius:${k==="routine"?"50%":"2px"};background:${CAL_SRC[k].c}"></i>
+      <span class="li-meta"><i style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${CAL_SRC[k].c}"></i>
         ${CAL_SRC[k].n}${r.catL !== "미분류" ? " · " + esc(r.catL) : ""}${r.owner ? " · " + esc(r.owner) : ""}${line ? " · " + esc(line) : ""}</span></span></li>`;
   }).join("");
   el.querySelectorAll("li[data-no]").forEach(li =>
@@ -2150,6 +2185,54 @@ document.getElementById("calPrev").onclick = () => { CAL.m--; if(CAL.m<0){CAL.m=
 document.getElementById("calNext").onclick = () => { CAL.m++; if(CAL.m>11){CAL.m=0;CAL.y++;} CAL.view="month"; renderCalendar(); };
 document.getElementById("calToday").onclick = () => { CAL.y=TODAY.getFullYear(); CAL.m=TODAY.getMonth(); renderCalendar(); };
 document.getElementById("calStatus").onchange = e => { CAL.status = e.target.value; renderCalendar(); };
+
+/* ---------- 루틴 메모지 ---------- */
+/* 반복 루틴은 캘린더에 뿌리지 않고, 주기별 메모지로 적어 둔다. 지연 집계 대상이 아니다. */
+function renderRoutineNote(){
+  const el = document.getElementById("rnote");
+  const rs = ROWS.filter(r => r.isRoutine);
+  if(!rs.length){
+    el.innerHTML = `<div class="empty">시트 <b>반복주기</b> 열에 <code>매일</code> · <code>매주 월</code> 같은 값을 넣으면
+      그 업무가 여기에 메모로 정리됩니다.</div>`;
+    document.getElementById("rnoteCard").classList.remove("hidden");
+    return;
+  }
+  const line = r => {
+    const cls = r.rBucket === "today" ? " today" : (r.rBucket === "late" ? " past" : "");
+    const when = r.rBucket === "never" ? "미실행"
+      : r.rBucket === "today" ? "오늘"
+      : r.nextDue ? md(r.nextDue) : "—";
+    return `<li class="${cls.trim()}" data-no="${r.no}" style="cursor:pointer">
+      <span class="bx"></span>
+      <span class="tx">${esc(r.task || "(제목 없음)")}${r.owner ? `<span style="color:var(--muted)"> · ${esc(r.owner)}</span>` : ""}</span>
+      <span class="dt">${when}</span></li>`;
+  };
+  /* 오늘 할 루틴 메모지를 맨 앞에 */
+  const todays = rs.filter(r => r.rBucket === "today" || r.rBucket === "late" || r.rBucket === "never");
+  let html = "";
+  if(todays.length){
+    html += `<div class="note-pad note-today">
+      <h4>오늘 챙길 루틴</h4>
+      <div class="sub">오늘 예정 · 예정일 지남 · 미실행</div>
+      <ul>${todays.map(line).join("")}</ul></div>`;
+  }
+  /* 주기별 묶음 — 자주 도는 것부터 */
+  const rank = c => c.kind === "day" ? (c.n || 1) : c.kind === "week" ? 7
+    : c.kind === "month" ? 30 : c.kind === "quarter" ? 90 : c.kind === "year" ? 365 : 999;
+  const groups = {};
+  rs.forEach(r => { const k = r.cyc.label; (groups[k] = groups[k] || []).push(r); });
+  html += Object.keys(groups)
+    .sort((a,b) => rank(groups[a][0].cyc) - rank(groups[b][0].cyc) || a.localeCompare(b,"ko"))
+    .map(k => {
+      const g = groups[k];
+      return `<div class="note-pad"><h4>↻ ${esc(k)}</h4>
+        <div class="sub">${g.length}건</div>
+        <ul>${g.map(line).join("")}</ul></div>`;
+    }).join("");
+  el.innerHTML = `<div class="notes">${html}</div>`;
+  el.querySelectorAll("li[data-no]").forEach(li =>
+    li.addEventListener("click", () => openDrawer(+li.dataset.no)));
+}
 
 /* ---------- 업무일지 자동 작성 ---------- */
 /* 실적 = 기간 내 진행 메모([M/D] 스탬프), 계획 = 기간 내 처리예정일자·루틴 발생일.
@@ -2188,8 +2271,15 @@ function within(d, a, b){ return d && a && b && d >= a && d <= b; }
 const md2 = d => `${d.getMonth()+1}/${d.getDate()}`;
 
 /* 한 업무구분(또는 담당자) 묶음의 업무내용 텍스트를 만든다 */
-function logBody(rows, mode, af, at, pf, pt){
+function logBody(rows, mode, af, at, pf, pt, showWho){
   const withMemo = lgMemo.checked, withRoutine = lgRoutine.checked;
+  const seenOwners = [];
+  const noteOwner = w => { if(w && seenOwners.indexOf(w) < 0) seenOwners.push(w); };
+  /* 항목 뒤 괄호: 날짜(또는 주기) + 담당자 */
+  const stamp = h => {
+    const base = h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d);
+    return showWho && h.who ? `${base} · ${h.who}` : base;
+  };
   /* 상위(부모 없는) 기준으로 트리 구성 */
   const tops = rows.filter(r => !r.parent);
   const orphanKids = rows.filter(r => r.parent && tops.indexOf(r.parent) < 0);
@@ -2201,17 +2291,21 @@ function logBody(rows, mode, af, at, pf, pt){
     const block = [];
 
     const pick = r => {
+      const who = r.owner || "";
+      let out;
       if(mode === "act"){
         const evs = memoEvents(r).filter(e => within(e.d, af, at));
-        return evs.map(e => ({txt: withMemo && e.head ? e.head : (r.task || ""), d: e.d, sub: e.sub}));
+        out = evs.map(e => ({txt: withMemo && e.head ? e.head : (r.task || ""), d: e.d, sub: e.sub, who}));
+      } else {
+        out = [];
+        if(r.deadline && within(r.deadline, pf, pt) && !isClosed(r)) out.push({txt: r.task || "", d: r.deadline, sub: [], who});
+        if(withRoutine && r.isRoutine && r.cyc && r.cyc.kind !== "free"){
+          const seed = r.lastRunD || (function(){ const x = new Date(pf); x.setDate(pf.getDate()-1); return x; })();
+          const oc = occurrences(r.cyc, seed, pf, pt);
+          if(oc.length) out.push({txt: r.task || "", d: oc[0], sub: [], cyc: r.cyc.label, many: oc.length, who});
+        }
       }
-      const out = [];
-      if(r.deadline && within(r.deadline, pf, pt) && !isClosed(r)) out.push({txt: r.task || "", d: r.deadline, sub: []});
-      if(withRoutine && r.isRoutine && r.cyc && r.cyc.kind !== "free"){
-        const seed = r.lastRunD || (function(){ const x = new Date(pf); x.setDate(pf.getDate()-1); return x; })();
-        const oc = occurrences(r.cyc, seed, pf, pt);
-        if(oc.length) out.push({txt: r.task || "", d: oc[0], sub: [], cyc: r.cyc.label, many: oc.length});
-      }
+      if(out.length) noteOwner(who);
       return out;
     };
 
@@ -2223,25 +2317,24 @@ function logBody(rows, mode, af, at, pf, pt){
     /* 상위 자신의 항목: 제목이 같으면 ① 줄에 날짜만 붙이고, 다르면 - 줄로 */
     const own = topHits.filter(h => (h.txt || "") === (top.task || ""));
     const ownOther = topHits.filter(h => (h.txt || "") !== (top.task || ""));
-    const tag = own.length
-      ? `(${own.map(h => h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d)).join(", ")})` : "";
+    const tag = own.length ? `(${own.map(stamp).join(", ")})` : "";
     block.push(`${cnum(n-1)} ${top.task || "(제목 없음)"}${tag}`);
     own.forEach(h => h.sub.forEach(sv => block.push(`   > ${sv}`)));
     ownOther.forEach(h => {
-      block.push(` - ${h.txt}(${h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d)})`);
+      block.push(` - ${h.txt}(${stamp(h)})`);
       h.sub.forEach(sv => block.push(`   > ${sv}`));
     });
     kidHits.forEach(({k, hits}) => {
       hits.forEach(h => {
         const label = (mode === "act" && withMemo && h.txt && h.txt !== k.task)
           ? `${k.task}: ${h.txt}` : (h.txt || k.task || "");
-        block.push(` - ${label}(${h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d)})`);
+        block.push(` - ${label}(${stamp(h)})`);
         h.sub.forEach(sv => block.push(`   > ${sv}`));
       });
     });
     lines.push(block.join("\n"));
   });
-  return lines.join("\n");
+  return {body: lines.join("\n"), owners: seenOwners};
 }
 
 function buildLog(){
@@ -2251,6 +2344,7 @@ function buildLog(){
   const wd  = lgWD.value || iso(TODAY);
   const ownerF = lgOwner.value;
   const split = lgSplit.value;
+  const withWho = lgWho.checked;
   const pool = ROWS.filter(r => !ownerF || r.ownerL === ownerF);
 
   let keys;
@@ -2258,20 +2352,27 @@ function buildLog(){
   else if(split === "owner") keys = [...new Set(pool.map(r => r.ownerL))];
   else keys = ["전체"];
 
+  /* 작업일자·담당자를 업무내용 안(맨 위 줄)에 적는다 */
+  const head = owners => {
+    if(!withWho) return "";
+    const who = owners.filter(Boolean).slice(0, 4).join(", ");
+    return `※ 작업일자 ${wd}` + (who ? ` · 담당자 ${who}` : "") + "\n";
+  };
+
   const out = [];
   keys.forEach(k => {
     const rows = split === "one" ? pool
       : pool.filter(r => (split === "cat" ? r.catL : r.ownerL) === k);
     if(!rows.length) return;
-    const owners = [...new Set(rows.map(r => r.owner).filter(Boolean))];
-    const name = split === "owner" ? k
-      : (lgPrefix.checked && k !== "미분류" ? `(사업)${k}` : k);
-    [["실적","act"],["계획","plan"]].forEach(([label, mode]) => {
-      const body = logBody(rows, mode, af, at, pf, pt);
-      if(!body.trim()) return;
-      out.push({gubun: label, name, cls, body, wd,
-                owner: split === "owner" ? k : owners.slice(0,3).join(", "), note: ""});
-    });
+    /* 업무명 = 업무구분명(또는 담당자명) 그대로 */
+    const perItemWho = withWho && split !== "owner";
+    const A = logBody(rows, "act",  af, at, pf, pt, perItemWho);
+    const P = logBody(rows, "plan", af, at, pf, pt, perItemWho);
+    if(!A.body.trim() && !P.body.trim()) return;
+    const ownersOf = X => split === "owner" ? [k] : X.owners;
+    out.push({name: k, cls,
+              act:  A.body.trim() ? head(ownersOf(A)) + A.body : "",
+              plan: P.body.trim() ? head(ownersOf(P)) + P.body : ""});
   });
   return out;
 }
@@ -2281,20 +2382,25 @@ function renderLog(){
   const rows = buildLog();
   LG.rows = rows;
   const tb = document.getElementById("lgBody");
+  const cell = (txt, kind) => {
+    if(!txt.trim()) return `<td class="body ${kind} dim">—</td>`;
+    const nl = txt.indexOf("\n");
+    const hasHead = txt.startsWith("※");
+    const h = hasHead && nl > 0 ? txt.slice(0, nl) : "";
+    const b = hasHead && nl > 0 ? txt.slice(nl + 1) : txt;
+    return `<td class="body ${kind}">${h ? `<span class="who">${esc(h)}</span>` : ""}${esc(b)}</td>`;
+  };
   if(!rows.length){
-    tb.innerHTML = `<tr><td colspan="7" class="empty">해당 기간에 실적(진행 메모)이나 계획(처리예정일자·루틴)이 없습니다.
+    tb.innerHTML = `<tr><td colspan="4" class="empty">해당 기간에 실적(진행 메모)이나 계획(처리예정일자·루틴)이 없습니다.
       기간을 넓히거나 시트에 날짜·메모를 입력해 보세요.</td></tr>`;
   } else {
     tb.innerHTML = rows.map(r => `<tr>
-      <td class="gubun${r.gubun === "계획" ? " plan" : ""}">${esc(r.gubun)}</td>
-      <td style="white-space:nowrap">${esc(r.name)}</td>
+      <td style="white-space:nowrap;font-weight:650">${esc(r.name)}</td>
       <td style="white-space:nowrap">${esc(r.cls)}</td>
-      <td class="body">${esc(r.body)}</td>
-      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(r.wd)}</td>
-      <td style="white-space:nowrap">${esc(r.owner)}</td>
-      <td>${esc(r.note)}</td></tr>`).join("");
+      ${cell(r.act, "act")}
+      ${cell(r.plan, "plan")}</tr>`).join("");
   }
-  const nAct = rows.filter(r => r.gubun === "실적").length, nPlan = rows.length - nAct;
+  const nAct = rows.filter(r => r.act).length, nPlan = rows.filter(r => r.plan).length;
   document.getElementById("lgCount").textContent = `${rows.length}행 (실적 ${nAct} · 계획 ${nPlan})`;
   document.getElementById("lgHint").textContent = rows.length
     ? "표 전체 복사 → 구글시트에서 첫 셀을 고르고 붙여넣으면 줄바꿈까지 그대로 들어갑니다."
@@ -2303,12 +2409,12 @@ function renderLog(){
 /* 클립보드: 엑셀·구글시트가 인식하는 TSV. 셀 안 줄바꿈은 따옴표로 감싼다 */
 function tsvCell(v){ const t = String(v == null ? "" : v);
   return /[\t\n"]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t; }
-function lgToTSV(bodyOnly){
+const LG_HEAD = ["업무명","분류명","실적","계획"];
+function lgToTSV(only){
   const rows = LG.rows || [];
-  if(bodyOnly) return rows.map(r => tsvCell(r.body)).join("\n");
-  const head = ["구분","업무명","분류명","업무내용","작업일자","담당자","비고"];
-  return [head.join("\t")].concat(rows.map(r =>
-    [r.gubun, r.name, r.cls, r.body, r.wd, r.owner, r.note].map(tsvCell).join("\t"))).join("\n");
+  if(only === "act" || only === "plan") return rows.map(r => tsvCell(r[only])).join("\n");
+  return [LG_HEAD.join("\t")].concat(rows.map(r =>
+    [r.name, r.cls, r.act, r.plan].map(tsvCell).join("\t"))).join("\n");
 }
 function lgCopy(text, btn, label){
   const done = () => { const o = btn.textContent; btn.textContent = "복사했습니다";
@@ -2319,13 +2425,14 @@ function lgCopy(text, btn, label){
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fb);
   else fb();
 }
-document.getElementById("lgCopyAll").onclick  = e => lgCopy(lgToTSV(false), e.target);
-document.getElementById("lgCopyBody").onclick = e => lgCopy(lgToTSV(true),  e.target);
+document.getElementById("lgCopyAll").onclick  = e => lgCopy(lgToTSV(null),   e.target);
+document.getElementById("lgCopyAct").onclick  = e => lgCopy(lgToTSV("act"),  e.target);
+document.getElementById("lgCopyPlan").onclick = e => lgCopy(lgToTSV("plan"), e.target);
 document.getElementById("lgCsv").onclick = () => {
   const rows = LG.rows || [];
   const q = v => '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
-  const csv = "﻿" + [["구분","업무명","분류명","업무내용","작업일자","담당자","비고"].map(q).join(",")]
-    .concat(rows.map(r => [r.gubun,r.name,r.cls,r.body,r.wd,r.owner,r.note].map(q).join(","))).join("\r\n");
+  const csv = "﻿" + [LG_HEAD.map(q).join(",")]
+    .concat(rows.map(r => [r.name,r.cls,r.act,r.plan].map(q).join(","))).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
   a.download = "업무일지_" + (lgWD.value || iso(TODAY)) + ".csv";
@@ -2333,7 +2440,7 @@ document.getElementById("lgCsv").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 };
 document.getElementById("lgPreset").onclick = () => { lgPreset(); renderLog(); };
-["lgAF","lgAT","lgPF","lgPT","lgWD","lgCls","lgSplit","lgOwner","lgPrefix","lgMemo","lgRoutine"]
+["lgAF","lgAT","lgPF","lgPT","lgWD","lgCls","lgSplit","lgOwner","lgWho","lgMemo","lgRoutine"]
   .forEach(id => { const el = document.getElementById(id);
     el.addEventListener(el.tagName === "INPUT" && el.type !== "checkbox" ? "input" : "change", renderLog); });
 
