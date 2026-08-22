@@ -321,6 +321,25 @@
   .drawer .sec .txt{font-size:12.5px; white-space:pre-line; line-height:1.6; color:var(--ink2);
                     background:var(--chip); border-radius:10px; padding:12px 14px}
 
+  /* 업무일지 */
+  .lgforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:14px}
+  .lgf{display:block}
+  .lgf > span{display:block;font-size:11.5px;font-weight:650;color:var(--ink2);margin-bottom:5px}
+  .lgf > div{display:flex;align-items:center;gap:6px}
+  .lgf i{font-style:normal;color:var(--muted);font-size:12px}
+  .lgf input{font:inherit;font-size:13px;padding:8px 10px;border-radius:9px;border:1px solid var(--ring);
+             background:var(--page);color:var(--ink);min-width:0;flex:1}
+  .lgopts{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;
+          padding-top:12px;border-top:1px solid var(--grid)}
+  .lgck{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);cursor:pointer}
+  .lgck input{width:15px;height:15px;accent-color:var(--h-blue);cursor:pointer}
+  .lgbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .lgbtns button.lgpri{background:var(--ink);color:var(--surface);border-color:var(--ink);font-weight:650}
+  #lgTable td{font-size:12px;vertical-align:top}
+  #lgTable td.body{white-space:pre-wrap;line-height:1.62;min-width:420px;font-size:12px}
+  #lgTable td.gubun{font-weight:700;white-space:nowrap}
+  #lgTable td.gubun.plan{color:var(--h-blue)}
+  #lgTable th{white-space:nowrap}
   /* calendar */
   .calbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
   .calbar .mon{font-size:17px;font-weight:700;min-width:126px;font-variant-numeric:tabular-nums}
@@ -415,6 +434,7 @@
   <button id="tabRoutine" role="tab" aria-selected="false">루틴 <span id="tabRoutineN" class="tabcnt"></span></button>
   <button id="tabCal" role="tab" aria-selected="false">캘린더</button>
   <button id="tabDash" role="tab" aria-selected="false">요약 · 표</button>
+  <button id="tabLog" role="tab" aria-selected="false">업무일지</button>
 </nav>
 
 <!-- ============ 보드 ============ -->
@@ -531,6 +551,56 @@
 </div>
 </section>
 
+<!-- ============ 업무일지 ============ -->
+<section id="viewLog" class="hidden">
+  <div class="card mb">
+    <h2>업무일지 자동 작성</h2>
+    <p class="note">시트의 <strong>진행 현황 메모</strong>로 <strong>실적</strong>을, <strong>처리예정일자·루틴</strong>으로 <strong>계획</strong>을 만듭니다.
+      기간만 정하면 <code>① 상위 / - 하위 / &gt; 세부</code> 형식으로 조립됩니다.</p>
+
+    <div class="lgforms">
+      <label class="lgf"><span>실적 기간</span>
+        <div><input type="date" id="lgAF"><i>~</i><input type="date" id="lgAT"></div></label>
+      <label class="lgf"><span>계획 기간</span>
+        <div><input type="date" id="lgPF"><i>~</i><input type="date" id="lgPT"></div></label>
+      <label class="lgf"><span>작업일자</span><div><input type="date" id="lgWD"></div></label>
+      <label class="lgf"><span>분류명</span><div><input type="text" id="lgCls" value="업무처리"></div></label>
+    </div>
+
+    <div class="lgopts">
+      <select id="lgSplit">
+        <option value="cat">행 분리: 업무구분별</option>
+        <option value="owner">행 분리: 담당자별</option>
+        <option value="one">행 분리: 없음 (한 행)</option>
+      </select>
+      <select id="lgOwner"><option value="">담당자 전체</option></select>
+      <label class="lgck"><input type="checkbox" id="lgPrefix" checked> 업무명에 <code>(사업)</code> 붙이기</label>
+      <label class="lgck"><input type="checkbox" id="lgMemo" checked> 실적에 메모 문장 포함</label>
+      <label class="lgck"><input type="checkbox" id="lgRoutine" checked> 계획에 루틴 포함</label>
+      <span class="count" id="lgCount"></span>
+    </div>
+
+    <div class="lgbtns">
+      <button class="lgpri" id="lgCopyAll">표 전체 복사 (시트에 붙여넣기)</button>
+      <button id="lgCopyBody">업무내용만 복사</button>
+      <button id="lgCsv">CSV 내려받기</button>
+      <button id="lgPreset">기간 되돌리기</button>
+    </div>
+    <p class="note" id="lgHint" style="margin:10px 0 0"></p>
+  </div>
+
+  <div class="card">
+    <h2>미리보기</h2>
+    <p class="note">셀 안의 줄바꿈까지 그대로 복사됩니다. 구글시트·엑셀에 붙여넣으면 한 셀에 들어갑니다.</p>
+    <div class="tblwrap" style="max-height:640px">
+      <table id="lgTable">
+        <thead><tr><th>구분</th><th>업무명</th><th>분류명</th><th>업무내용</th><th>작업일자</th><th>담당자</th><th>비고</th></tr></thead>
+        <tbody id="lgBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <!-- ============ 루틴 ============ -->
 <section id="viewRoutine" class="hidden">
   <div class="grid tiles mb" id="rTiles"></div>
@@ -550,6 +620,8 @@
     <div><strong>다음 예정일</strong> — <strong>N열(최근 수행일)</strong> 에 주기를 더해 자동 계산합니다.
       별도의 예정일 열을 두지 않아 두 값이 어긋날 일이 없습니다. N열이 비어 있으면 <strong>미실행</strong>으로 표시합니다.</div>
     <div><strong>운영 방법</strong> — 루틴을 한 번 처리할 때마다 N열 날짜만 오늘로 바꿔 주세요. 다음 예정일이 자동으로 밀립니다.</div>
+    <div><strong>지연 판정 제외</strong> — 반복 루틴은 <strong>지연으로 집계하지 않습니다.</strong> 상단 <em>지연 · 임박</em> 지표는 처리예정일자만 보고,
+      루틴은 이 탭과 캘린더에서 일정으로만 표시됩니다.</div>
   </div>
 </section>
 
@@ -722,7 +794,7 @@ const SNAPSHOT = [
 "detail": "직무기술서 문구 확정 필요",
 "prio": "상",
 "status": "협의 필요",
-"due": "T+3",
+"due": "T+0",
 "done": "",
 "progress": "[T-7] 초안 회신\n[T-2] 부서 의견 취합 중",
 "feedback": "",
@@ -822,7 +894,7 @@ const SNAPSHOT = [
 "detail": "증빙 누락 건 확인 필요",
 "prio": "상",
 "status": "확인 필요",
-"due": "T+1",
+"due": "T-2",
 "done": "",
 "progress": "[T-15] 1차 취합\n[T-2] 누락 2건 재요청",
 "feedback": "",
@@ -1232,8 +1304,9 @@ function occurrences(c, seed, a, b){
   return out;
 }
 /* 루틴 상태: 미실행 / 지연 / 오늘 / 이번 주 / 예정 */
-const RBUCKETS = [["지연","late","var(--s-crit)","!"],["오늘","today","var(--s-serious)","●"],
-                  ["이번 주","soon","var(--h-blue)","▶"],["예정","later","var(--s-gray)","○"],
+/* 루틴은 '지연'으로 취급하지 않는다. 예정일이 지난 건은 '예정일 지남'으로 중립 표시. */
+const RBUCKETS = [["예정일 지남","late","var(--s-gray)","↻"],["오늘","today","var(--s-serious)","●"],
+                  ["이번 주","soon","var(--h-blue)","▶"],["이후 예정","later","var(--s-gray)","○"],
                   ["미실행","never","var(--s-none)","—"]];
 
 /* ---------- 정규화 ---------- */
@@ -1508,14 +1581,11 @@ const BOARD = {by:"status", cat:"", q:"", stale:false, focus:""};
 const staleDays = r => r.lastUpdate ? daysBetween(r.lastUpdate, TODAY) : null;
 /* 종결된 건은 모든 위험 판정에서 제외 */
 const isClosed = r => r.group === "완료" || r.group === "중단" || !!r.done;
-/* 마감 D-day: 처리예정일자 또는 루틴 다음 예정일 중 더 급한 쪽 */
+/* 마감 D-day = 처리예정일자 기준만. 반복 루틴은 지연·임박 판정에 넣지 않는다
+   (루틴은 루틴 탭과 캘린더에서 일정으로만 보여준다). */
 function dueDays(r){
-  const a = (!isClosed(r) && r.deadline) ? daysBetween(TODAY, r.deadline) : null;
-  const b = (r.isRoutine && r.rBucket && r.rBucket !== "never" && r.nextDue) ? r.rDays : null;
-  if(a === null && b === null) return (r.isRoutine && r.rBucket === "never") ? "never" : null;
-  if(a === null) return b;
-  if(b === null) return a;
-  return Math.min(a, b);
+  if(isClosed(r) || !r.deadline) return null;
+  return daysBetween(TODAY, r.deadline);
 }
 const FOCUS = {
   late:  r => { const d = dueDays(r); return typeof d === "number" && d < 0; },
@@ -1541,8 +1611,7 @@ function avatar(name){
 function ddText(r){
   const d = dueDays(r);
   if(isClosed(r)) return {big:"종결", cap:"", cls:"none"};
-  if(d === "never") return {big:"미실행", cap:"", cls:"late"};
-  if(d === null) return {big:"미입력", cap:"", cls:"none"};
+  if(d === null) return {big: r.isRoutine ? "루틴" : "미입력", cap:"", cls:"none"};
   if(d < 0)  return {big:Math.abs(d)+"일", cap:"지연", cls:"late"};
   if(d === 0) return {big:"오늘", cap:"", cls:"today"};
   return {big:"D-"+d, cap:"", cls:d <= 7 ? "soon" : "none"};
@@ -1633,7 +1702,8 @@ function renderBoard(){
       if(BOARD.by !== "status") badges.push(`<span class="bdg"><span class="ico" style="color:${r.m.c}">${r.m.i}</span> ${esc(r.statusL)}</span>`);
       if(BOARD.by !== "cat") badges.push(`<span class="bdg">${esc(r.catL)}</span>`);
       if(SCHEMAS[VER_USED].has.parent && r.children.length) badges.push(`<span class="bdg" style="font-weight:650">⌄ 하위 ${r.children.length}</span>`);
-      if(r.isRoutine) badges.push(`<span class="bdg" style="font-weight:650">↻ ${esc(r.cyc.short)}</span>`);
+      if(r.isRoutine) badges.push(`<span class="bdg" style="font-weight:650">↻ ${esc(r.cyc.short)}${
+          r.nextDue ? " " + md(r.nextDue) : r.rBucket === "never" ? " 미실행" : ""}</span>`);
       return `<article class="tcard${tint}" data-no="${r.no}" style="--sc:${r.m.c}">
         <div class="thead">
           ${r.prioL === "상" ? '<span class="pdot" title="우선순위 상"></span>' : ""}
@@ -1669,7 +1739,7 @@ function openDrawer(no){
                ["최근 업데이트", r.lastUpdate ? `${md(r.lastUpdate)} (${sd === 0 ? "오늘" : sd + "일 전"})` : "기록 없음"]])
              .concat(r.isRoutine ? [["반복 주기", "↻ " + r.cyc.label],
                ["최근 수행일", r.lastRunD ? md(r.lastRunD) : "미실행"],
-               ["다음 예정일", r.nextDue ? md(r.nextDue) + (r.rDays < 0 ? ` (${Math.abs(r.rDays)}일 지연)`
+               ["다음 예정일", r.nextDue ? md(r.nextDue) + (r.rDays < 0 ? ` (${Math.abs(r.rDays)}일 지남)`
                  : r.rDays === 0 ? " (오늘)" : ` (D-${r.rDays})`) : "—"]] : []);
   const rel = [];
   if(r.parent) rel.push(`<div class="relrow">상위 &nbsp;<a href="#" data-go="${r.parent.no}">${esc(r.parent.task || r.parent.id)}</a></div>`);
@@ -1814,7 +1884,7 @@ function routineRows(){ return ROWS.filter(r => r.isRoutine); }
 function renderRoutine(){
   const rs = routineRows();
   const cnt = k => rs.filter(r => r.rBucket === k).length;
-  const urgent = cnt("late") + cnt("today") + cnt("never");
+  const urgent = cnt("today");   /* 루틴 탭 배지는 '오늘 할 루틴' 만 */
   const tabN = document.getElementById("tabRoutineN");
   tabN.textContent = urgent ? urgent : "";
 
@@ -1851,10 +1921,10 @@ function renderRoutine(){
       const b = buckets.get(key(d));
       if(b){ b.n++; if(b.tasks.length < 8) b.tasks.push(r.task || "(제목 없음)"); }
     });
-    /* 지연·오늘 건은 오늘 칸에도 한 번 올린다 */
+    /* 예정일이 지난 루틴·미실행 루틴은 오늘 칸에 한 번 올린다 (지연 아님, 안내용) */
     if(r.rBucket === "late" || r.rBucket === "never"){
       const b = buckets.get(key(TODAY));
-      if(b && b.tasks.indexOf(r.task) < 0){ b.n++; b.tasks.push((r.task || "(제목 없음)") + " (밀린 건)"); }
+      if(b && b.tasks.indexOf(r.task) < 0){ b.n++; b.tasks.push((r.task || "(제목 없음)") + " (예정일 지남)"); }
     }
   });
   const arr = [...buckets.values()], max = Math.max(1, ...arr.map(b => b.n));
@@ -1881,10 +1951,10 @@ function renderRoutine(){
       <div class="rlist">${g.map(r => {
         let chip, ctxt;
         if(k === "never"){ chip = "var(--s-none)"; ctxt = "기록 없음"; }
-        else if(k === "late"){ chip = "var(--s-crit)"; ctxt = Math.abs(r.rDays) + "일 지연"; }
+        else if(k === "late"){ chip = "var(--chip)"; ctxt = md(r.nextDue) + " 지남"; }
         else if(k === "today"){ chip = "var(--s-serious)"; ctxt = "오늘"; }
         else { chip = k === "soon" ? "var(--h-blue)" : "var(--chip)"; ctxt = "D-" + r.rDays; }
-        const fg = k === "later" ? "var(--ink2)" : "#fff";
+        const fg = (k === "later" || k === "late") ? "var(--ink2)" : "#fff";
         return `<article class="rcard" data-no="${r.no}">
           <div><div class="tt">${esc(r.task || "(제목 없음)")}</div>
             <div class="mt">
@@ -1939,12 +2009,9 @@ function calEvents(a, b){
   });
   return out;
 }
-/* 지난 날짜에 남은 미완료: 처리예정일자 미완료 + 루틴 미이행 */
+/* 지난 날짜에 남은 미완료 = 처리예정일자만. 루틴 반복은 지연으로 보지 않고 표시만 한다. */
 function isOverdueEv(e){
-  if(e.d >= TODAY) return false;
-  if(e.k === "deadline") return !isClosed(e.r);
-  if(e.k === "routine")  return e.r.rBucket === "late" || e.r.rBucket === "never";
-  return false;
+  return e.d < TODAY && e.k === "deadline" && !isClosed(e.r);
 }
 function evLine(e){
   const od = isOverdueEv(e);
@@ -2084,8 +2151,194 @@ document.getElementById("calNext").onclick = () => { CAL.m++; if(CAL.m>11){CAL.m
 document.getElementById("calToday").onclick = () => { CAL.y=TODAY.getFullYear(); CAL.m=TODAY.getMonth(); renderCalendar(); };
 document.getElementById("calStatus").onchange = e => { CAL.status = e.target.value; renderCalendar(); };
 
+/* ---------- 업무일지 자동 작성 ---------- */
+/* 실적 = 기간 내 진행 메모([M/D] 스탬프), 계획 = 기간 내 처리예정일자·루틴 발생일.
+   출력 형식:  ① 상위 업무
+              - 하위 업무 또는 메모(월/일)
+                > 세부 메모(월/일)                                        */
+const CIRCLE = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳".split("");
+const cnum = i => i < CIRCLE.length ? CIRCLE[i] : "(" + (i+1) + ")";
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parseISO = v => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ""); if(!m) return null;
+  const d = new Date(+m[1], +m[2]-1, +m[3]); d.setHours(0,0,0,0); return d; };
+const LG = {};
+function lgPreset(){
+  const a = new Date(TODAY); a.setDate(a.getDate() - 30);
+  const pf = new Date(TODAY); pf.setDate(pf.getDate() + 1);
+  const pt = new Date(TODAY); pt.setDate(pt.getDate() + 30);
+  lgAF.value = iso(a); lgAT.value = iso(TODAY);
+  lgPF.value = iso(pf); lgPT.value = iso(pt);
+  lgWD.value = iso(TODAY);
+}
+/* 메모를 [M/D] 단위 이벤트로 쪼갠다 */
+function memoEvents(r){
+  const src = r.progress || "";
+  const parts = src.split(/(?=\[\s*\d{1,2}\s*\/\s*\d{1,2})/).map(x => x.trim()).filter(Boolean);
+  const out = [];
+  parts.forEach(chunk => {
+    const m = chunk.match(/^\[\s*(\d{1,2})\s*\/\s*(\d{1,2})[^\]]*\]\s*([\s\S]*)$/);
+    if(!m) return;
+    const d = mk(+m[1], +m[2]);
+    const lines = m[3].split("\n").map(x => x.trim()).filter(Boolean);
+    out.push({d, head: lines[0] || "", sub: lines.slice(1)});
+  });
+  return out;
+}
+function within(d, a, b){ return d && a && b && d >= a && d <= b; }
+const md2 = d => `${d.getMonth()+1}/${d.getDate()}`;
+
+/* 한 업무구분(또는 담당자) 묶음의 업무내용 텍스트를 만든다 */
+function logBody(rows, mode, af, at, pf, pt){
+  const withMemo = lgMemo.checked, withRoutine = lgRoutine.checked;
+  /* 상위(부모 없는) 기준으로 트리 구성 */
+  const tops = rows.filter(r => !r.parent);
+  const orphanKids = rows.filter(r => r.parent && tops.indexOf(r.parent) < 0);
+  const groups = tops.concat(orphanKids);
+  const lines = [];
+  let n = 0;
+  groups.forEach(top => {
+    const kids = (top.children || []).filter(k => rows.indexOf(k) >= 0);
+    const block = [];
+
+    const pick = r => {
+      if(mode === "act"){
+        const evs = memoEvents(r).filter(e => within(e.d, af, at));
+        return evs.map(e => ({txt: withMemo && e.head ? e.head : (r.task || ""), d: e.d, sub: e.sub}));
+      }
+      const out = [];
+      if(r.deadline && within(r.deadline, pf, pt) && !isClosed(r)) out.push({txt: r.task || "", d: r.deadline, sub: []});
+      if(withRoutine && r.isRoutine && r.cyc && r.cyc.kind !== "free"){
+        const seed = r.lastRunD || (function(){ const x = new Date(pf); x.setDate(pf.getDate()-1); return x; })();
+        const oc = occurrences(r.cyc, seed, pf, pt);
+        if(oc.length) out.push({txt: r.task || "", d: oc[0], sub: [], cyc: r.cyc.label, many: oc.length});
+      }
+      return out;
+    };
+
+    const topHits = pick(top);
+    const kidHits = kids.map(k => ({k, hits: pick(k)})).filter(x => x.hits.length);
+    if(!topHits.length && !kidHits.length) return;
+
+    n += 1;
+    /* 상위 자신의 항목: 제목이 같으면 ① 줄에 날짜만 붙이고, 다르면 - 줄로 */
+    const own = topHits.filter(h => (h.txt || "") === (top.task || ""));
+    const ownOther = topHits.filter(h => (h.txt || "") !== (top.task || ""));
+    const tag = own.length
+      ? `(${own.map(h => h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d)).join(", ")})` : "";
+    block.push(`${cnum(n-1)} ${top.task || "(제목 없음)"}${tag}`);
+    own.forEach(h => h.sub.forEach(sv => block.push(`   > ${sv}`)));
+    ownOther.forEach(h => {
+      block.push(` - ${h.txt}(${h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d)})`);
+      h.sub.forEach(sv => block.push(`   > ${sv}`));
+    });
+    kidHits.forEach(({k, hits}) => {
+      hits.forEach(h => {
+        const label = (mode === "act" && withMemo && h.txt && h.txt !== k.task)
+          ? `${k.task}: ${h.txt}` : (h.txt || k.task || "");
+        block.push(` - ${label}(${h.cyc ? `${h.cyc} · ${h.many}회` : md2(h.d)})`);
+        h.sub.forEach(sv => block.push(`   > ${sv}`));
+      });
+    });
+    lines.push(block.join("\n"));
+  });
+  return lines.join("\n");
+}
+
+function buildLog(){
+  const af = parseISO(lgAF.value), at = parseISO(lgAT.value);
+  const pf = parseISO(lgPF.value), pt = parseISO(lgPT.value);
+  const cls = lgCls.value.trim() || "업무처리";
+  const wd  = lgWD.value || iso(TODAY);
+  const ownerF = lgOwner.value;
+  const split = lgSplit.value;
+  const pool = ROWS.filter(r => !ownerF || r.ownerL === ownerF);
+
+  let keys;
+  if(split === "cat")   keys = [...new Set(pool.map(r => r.catL))];
+  else if(split === "owner") keys = [...new Set(pool.map(r => r.ownerL))];
+  else keys = ["전체"];
+
+  const out = [];
+  keys.forEach(k => {
+    const rows = split === "one" ? pool
+      : pool.filter(r => (split === "cat" ? r.catL : r.ownerL) === k);
+    if(!rows.length) return;
+    const owners = [...new Set(rows.map(r => r.owner).filter(Boolean))];
+    const name = split === "owner" ? k
+      : (lgPrefix.checked && k !== "미분류" ? `(사업)${k}` : k);
+    [["실적","act"],["계획","plan"]].forEach(([label, mode]) => {
+      const body = logBody(rows, mode, af, at, pf, pt);
+      if(!body.trim()) return;
+      out.push({gubun: label, name, cls, body, wd,
+                owner: split === "owner" ? k : owners.slice(0,3).join(", "), note: ""});
+    });
+  });
+  return out;
+}
+
+function renderLog(){
+  fillSelect("lgOwner", [...new Set(ROWS.map(r => r.ownerL))], "담당자 전체");
+  const rows = buildLog();
+  LG.rows = rows;
+  const tb = document.getElementById("lgBody");
+  if(!rows.length){
+    tb.innerHTML = `<tr><td colspan="7" class="empty">해당 기간에 실적(진행 메모)이나 계획(처리예정일자·루틴)이 없습니다.
+      기간을 넓히거나 시트에 날짜·메모를 입력해 보세요.</td></tr>`;
+  } else {
+    tb.innerHTML = rows.map(r => `<tr>
+      <td class="gubun${r.gubun === "계획" ? " plan" : ""}">${esc(r.gubun)}</td>
+      <td style="white-space:nowrap">${esc(r.name)}</td>
+      <td style="white-space:nowrap">${esc(r.cls)}</td>
+      <td class="body">${esc(r.body)}</td>
+      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${esc(r.wd)}</td>
+      <td style="white-space:nowrap">${esc(r.owner)}</td>
+      <td>${esc(r.note)}</td></tr>`).join("");
+  }
+  const nAct = rows.filter(r => r.gubun === "실적").length, nPlan = rows.length - nAct;
+  document.getElementById("lgCount").textContent = `${rows.length}행 (실적 ${nAct} · 계획 ${nPlan})`;
+  document.getElementById("lgHint").textContent = rows.length
+    ? "표 전체 복사 → 구글시트에서 첫 셀을 고르고 붙여넣으면 줄바꿈까지 그대로 들어갑니다."
+    : "";
+}
+/* 클립보드: 엑셀·구글시트가 인식하는 TSV. 셀 안 줄바꿈은 따옴표로 감싼다 */
+function tsvCell(v){ const t = String(v == null ? "" : v);
+  return /[\t\n"]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t; }
+function lgToTSV(bodyOnly){
+  const rows = LG.rows || [];
+  if(bodyOnly) return rows.map(r => tsvCell(r.body)).join("\n");
+  const head = ["구분","업무명","분류명","업무내용","작업일자","담당자","비고"];
+  return [head.join("\t")].concat(rows.map(r =>
+    [r.gubun, r.name, r.cls, r.body, r.wd, r.owner, r.note].map(tsvCell).join("\t"))).join("\n");
+}
+function lgCopy(text, btn, label){
+  const done = () => { const o = btn.textContent; btn.textContent = "복사했습니다";
+    setTimeout(() => btn.textContent = o, 1600); };
+  const fb = () => { const ta = document.createElement("textarea"); ta.value = text;
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); done(); }catch(e){} document.body.removeChild(ta); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fb);
+  else fb();
+}
+document.getElementById("lgCopyAll").onclick  = e => lgCopy(lgToTSV(false), e.target);
+document.getElementById("lgCopyBody").onclick = e => lgCopy(lgToTSV(true),  e.target);
+document.getElementById("lgCsv").onclick = () => {
+  const rows = LG.rows || [];
+  const q = v => '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
+  const csv = "﻿" + [["구분","업무명","분류명","업무내용","작업일자","담당자","비고"].map(q).join(",")]
+    .concat(rows.map(r => [r.gubun,r.name,r.cls,r.body,r.wd,r.owner,r.note].map(q).join(","))).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
+  a.download = "업무일지_" + (lgWD.value || iso(TODAY)) + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+};
+document.getElementById("lgPreset").onclick = () => { lgPreset(); renderLog(); };
+["lgAF","lgAT","lgPF","lgPT","lgWD","lgCls","lgSplit","lgOwner","lgPrefix","lgMemo","lgRoutine"]
+  .forEach(id => { const el = document.getElementById(id);
+    el.addEventListener(el.tagName === "INPUT" && el.type !== "checkbox" ? "input" : "change", renderLog); });
+
 /* ---------- 탭 ---------- */
-const VIEWS = {board:"viewBoard", routine:"viewRoutine", cal:"viewCal", dash:"viewDash"};
+const VIEWS = {board:"viewBoard", routine:"viewRoutine", cal:"viewCal", dash:"viewDash", log:"viewLog"};
 function showTab(which){
   Object.entries(VIEWS).forEach(([k,id]) => {
     document.getElementById(id).classList.toggle("hidden", k !== which);
@@ -2094,11 +2347,13 @@ function showTab(which){
   if(which === "cal") renderCalendar();
   if(which === "board") renderBoard();
   if(which === "routine") renderRoutine();
+  if(which === "log") renderLog();
 }
 document.getElementById("tabRoutine").onclick = () => showTab("routine");
 document.getElementById("tabBoard").onclick = () => showTab("board");
 document.getElementById("tabCal").onclick   = () => showTab("cal");
 document.getElementById("tabDash").onclick  = () => showTab("dash");
+document.getElementById("tabLog").onclick   = () => showTab("log");
 
 /* ---------- render ---------- */
 const DUE_DEF = [["경과","over","var(--s-crit)","!"],["임박(7일)","soon","var(--s-serious)","▲"],
@@ -2178,6 +2433,8 @@ function render(rows){
   renderTable();
   renderBoard();
   renderRoutine();
+  if(!LG.init){ lgPreset(); LG.init = true; }
+  if(document.getElementById("tabLog").getAttribute("aria-selected") === "true") renderLog();
   if(document.getElementById("tabCal").getAttribute("aria-selected") === "true") renderCalendar();
 }
 /* 최근 업데이트 최신순 → 미기록은 뒤로 */
