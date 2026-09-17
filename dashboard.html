@@ -588,7 +588,7 @@
 <section id="viewLog" class="hidden">
   <div class="card mb">
     <h2>업무일지 자동 작성</h2>
-    <p class="note">시트의 <strong>진행 현황 메모</strong>로 <strong>실적</strong>을, <strong>처리예정일자·진행 중 업무·루틴</strong>으로 <strong>계획</strong>을 만듭니다.
+    <p class="note">시트의 <strong>진행 현황 메모</strong>로 <strong>실적</strong>을, <strong>처리예정일자 + 끝나지 않은 업무(진행 중·시작 전)·루틴</strong>으로 <strong>계획</strong>을 만듭니다.
       각 항목 아래에는 <strong>진행현황 및 변동 사항</strong>이 줄마다 <code>→</code> 로 붙습니다.
       기간만 정하면 <code>① 상위 / - 하위 / → 진행현황</code> 형식으로 조립됩니다.</p>
 
@@ -610,7 +610,13 @@
       <label class="lgck"><input type="checkbox" id="lgWho" checked> 항목 뒤에 <strong>담당자</strong> 표기</label>
       <label class="lgck"><input type="checkbox" id="lgMemo" checked> 실적에 메모 문장 포함</label>
       <label class="lgck"><input type="checkbox" id="lgRoutine" checked> 계획에 루틴 포함</label>
-      <label class="lgck"><input type="checkbox" id="lgProg" checked> 계획에 <strong>진행 중 업무 · 진행현황(→)</strong> 포함</label>
+      <select id="lgScope" title="처리예정일자가 기간 안에 없어도 계획에 올릴 업무의 범위">
+        <option value="due">계획 범위: 예정일만</option>
+        <option value="doing">계획 범위: 예정일 + 진행 중</option>
+        <option value="todo" selected>계획 범위: 예정일 + 진행 중 + 시작 전</option>
+        <option value="open">계획 범위: 끝나지 않은 업무 전부</option>
+      </select>
+      <label class="lgck"><input type="checkbox" id="lgProg" checked> 계획에 <strong>진행현황(→)</strong> 붙이기</label>
       <span class="count" id="lgCount"></span>
     </div>
 
@@ -2332,12 +2338,24 @@ const md2 = d => `${d.getMonth()+1}/${d.getDate()}`;
 /* 한 업무구분(또는 담당자) 묶음의 업무내용 텍스트를 만든다 */
 function logBody(rows, mode, af, at, pf, pt, showWho){
   const withMemo = lgMemo.checked, withRoutine = lgRoutine.checked, withProg = lgProg.checked;
+  /* 처리예정일자가 기간 밖(또는 비어 있음)이어도 계획에 올릴 범위 */
+  const SCOPE = lgScope.value;
+  const inScope = r => {
+    if(isClosed(r)) return false;
+    if(SCOPE === "open")  return true;
+    if(SCOPE === "todo")  return r.group === "진행" || r.group === "미착수";
+    if(SCOPE === "doing") return r.group === "진행";
+    return false;
+  };
   const seenOwners = [];
   const noteOwner = w => { if(w && seenOwners.indexOf(w) < 0) seenOwners.push(w); };
   /* 항목 뒤 괄호: 날짜(또는 주기 · 상태) + 담당자 */
   const stamp = h => {
-    const base = h.cyc ? `${h.cyc} · ${h.many}회` : (h.d ? md2(h.d) : (h.note || "진행 중"));
-    return showWho && h.who ? `${base} · ${h.who}` : base;
+    let base;
+    if(h.cyc) base = `${h.cyc} · ${h.many}회`;
+    else if(h.note) base = h.d ? `${h.note} · ${md2(h.d)}` : h.note;   /* 기간 밖 예정일은 상태와 함께 */
+    else base = h.d ? md2(h.d) : "";
+    return showWho && h.who && base ? `${base} · ${h.who}` : base;
   };
   /* 진행현황 및 변동 사항 — 최근 메모부터 줄 단위로. 각 줄 앞에는 → 가 붙는다 */
   const progLines = r => {
@@ -2372,8 +2390,8 @@ function logBody(rows, mode, af, at, pf, pt, showWho){
         const dated = r.deadline && within(r.deadline, pf, pt) && !isClosed(r);
         /* 처리예정일자가 기간 안에 있거나, 지금 '진행' 중인 업무는 계획에 올린다 */
         if(dated) out.push({txt: r.task || "", d: r.deadline, sub: progLines(r), who});
-        else if(withProg && r.group === "진행" && !isClosed(r))
-          out.push({txt: r.task || "", d: null, note: r.statusL || "진행 중", sub: progLines(r), who});
+        else if(inScope(r))
+          out.push({txt: r.task || "", d: r.deadline || null, note: r.statusL || "진행 중", sub: progLines(r), who});
         if(withRoutine && r.isRoutine && r.cyc && r.cyc.kind !== "free"){
           const seed = r.lastRunD || (function(){ const x = new Date(pf); x.setDate(pf.getDate()-1); return x; })();
           const oc = occurrences(r.cyc, seed, pf, pt);
@@ -2500,7 +2518,7 @@ document.getElementById("lgCsv").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 };
 document.getElementById("lgPreset").onclick = () => { lgPreset(); renderLog(); };
-["lgAF","lgAT","lgPF","lgPT","lgCls","lgSplit","lgOwner","lgWho","lgMemo","lgRoutine","lgProg"]
+["lgAF","lgAT","lgPF","lgPT","lgCls","lgSplit","lgOwner","lgWho","lgMemo","lgRoutine","lgProg","lgScope"]
   .forEach(id => { const el = document.getElementById(id);
     el.addEventListener(el.tagName === "INPUT" && el.type !== "checkbox" ? "input" : "change", renderLog); });
 
