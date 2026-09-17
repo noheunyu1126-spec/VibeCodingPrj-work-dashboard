@@ -1917,6 +1917,9 @@ function renderTree(rows){
     <h5>단독 업무 ${solo.length}건</h5><div class="sologrid" id="soloGrid"></div></div></div>` : ""}</div>`;
 }
 
+/* 화면에서 뺀 영역(루틴·요약 탭)의 요소는 없을 수 있다 — 없으면 조용히 건너뛴다 */
+function setHTML(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html; return el; }
+
 /* ---------- 루틴 화면 ---------- */
 function routineRows(){ return ROWS.filter(r => r.isRoutine); }
 function renderRoutine(){
@@ -1927,21 +1930,20 @@ function renderRoutine(){
   if(tabN) tabN.textContent = urgent ? urgent : "";
 
   /* KPI */
-  document.getElementById("rTiles").innerHTML =
+  setHTML("rTiles",
     `<div class="card hero"><div class="label">루틴 업무</div>
        <div class="val">${rs.length}<span class="unit">건</span></div>
        <div style="font-size:11px;color:var(--muted);margin-top:8px">전체 ${ROWS.length}건 중 ${
          ROWS.length ? Math.round(rs.length / ROWS.length * 100) : 0}%</div></div>` +
     RBUCKETS.map(([label, k, c, i]) =>
       `<div class="card tile"><div class="label"><span class="dot" style="background:${c}"></span><span class="ico">${i}</span> ${label}</div>
-        <div class="val">${cnt(k)}<span class="pct">${rs.length ? Math.round(cnt(k)/rs.length*100) : 0}%</span></div></div>`).join("");
+        <div class="val">${cnt(k)}<span class="pct">${rs.length ? Math.round(cnt(k)/rs.length*100) : 0}%</span></div></div>`).join(""));
 
   if(!rs.length){
-    document.getElementById("rGroups").innerHTML =
+    setHTML("rGroups",
       `<h2>루틴 업무</h2><div class="empty">시트 <b>M열(반복 주기)</b> 에 <code>매주 월</code> 같은 값을 넣으면
-       그 행이 루틴 업무로 잡히고 여기에 표시됩니다.</div>`;
-    document.getElementById("rLoad").innerHTML = "";
-    document.getElementById("rLoadX").innerHTML = "";
+       그 행이 루틴 업무로 잡히고 여기에 표시됩니다.</div>`);
+    setHTML("rLoad", "");
     return;
   }
 
@@ -1966,7 +1968,7 @@ function renderRoutine(){
     }
   });
   const arr = [...buckets.values()], max = Math.max(1, ...arr.map(b => b.n));
-  const load = document.getElementById("rLoad");
+  const load = document.getElementById("rLoad") || document.createElement("div");
   load.innerHTML = arr.map((b, i) => {
     const wd = WD[b.d.getDay()], we = b.d.getDay() === 0 || b.d.getDay() === 6;
     const heat = b.n ? Math.min(1, 0.22 + (b.n / max) * 0.78) : 0;
@@ -2005,8 +2007,8 @@ function renderRoutine(){
         </article>`;
       }).join("")}</div></div>`;
   }).join("");
-  document.getElementById("rGroups").innerHTML = `<h2>주기별 루틴 현황</h2>
-    <p class="note">최근 수행일 + 반복 주기로 계산한 다음 예정일 기준. 카드를 누르면 상세가 열립니다.</p>` + html;
+  setHTML("rGroups", `<h2>주기별 루틴 현황</h2>
+    <p class="note">최근 수행일 + 반복 주기로 계산한 다음 예정일 기준. 카드를 누르면 상세가 열립니다.</p>` + html);
   document.querySelectorAll("#rGroups .rcard").forEach(c =>
     c.addEventListener("click", () => openDrawer(+c.dataset.no)));
 }
@@ -2534,7 +2536,7 @@ function render(rows){
   renderCatChips("fCatChips", "fCat", renderTable);
   renderTable();
   renderBoard();
-  renderRoutine();
+  /* 루틴 탭은 삭제됨 — 루틴은 캘린더의 '루틴 메모'(renderRoutineNote)에서만 그린다 */
   if(!LG.init){ lgPreset(); LG.init = true; }
   if(document.getElementById("tabLog").getAttribute("aria-selected") === "true") renderLog();
   if(document.getElementById("tabCal").getAttribute("aria-selected") === "true") renderCalendar();
@@ -2584,13 +2586,31 @@ function badge(txt, live){
 async function boot(){
   document.getElementById("srclink").href = SHEET_URL;
   badge("불러오는 중…", true);
+  let live = null;
   try{
-    const rows = fromGviz(await loadLive());
-    if(!rows.length) throw new Error("empty");
-    render(rows);
-    badge("실시간 연동", true);
-    verBadge();
-    document.getElementById("asof").textContent = "조회 " + new Date().toLocaleString("ko-KR");
+    live = fromGviz(await loadLive());
+    if(!live.length) throw new Error("empty");
+  }catch(e){ live = null; console.warn("시트 읽기 실패:", e); }
+
+  if(live){
+    /* 시트는 읽었다 — 여기서 나는 오류는 '접근 실패'가 아니라 화면 구성 오류다 */
+    try{
+      render(live);
+      badge("실시간 연동", true);
+      verBadge();
+      document.getElementById("asof").textContent = "조회 " + new Date().toLocaleString("ko-KR");
+    }catch(e){
+      console.error("화면 구성 오류:", e);
+      badge("실시간 연동 · 일부 화면 오류", false);
+      verBadge();
+      document.getElementById("asof").textContent =
+        "시트는 읽었습니다(" + live.length + "행). 표시 중 오류: " + (e && e.message ? e.message : e);
+    }
+    return;
+  }
+
+  try{
+    throw new Error("no live data");
   }catch(e){
     VER_USED = VER === "auto" ? "v2" : VER;   /* 데모는 기본 V2 */
     render(relativizeDemo(demoForVersion(SNAPSHOT, VER_USED)));
