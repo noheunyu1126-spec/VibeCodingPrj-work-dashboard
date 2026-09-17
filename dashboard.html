@@ -372,6 +372,9 @@
   #lgTable tr.plan > td{background:color-mix(in srgb, var(--h-blue) 4%, transparent)}
   #lgTable tr.act  > td{border-top:1px solid var(--ring)}
   #lgTable th{white-space:nowrap}
+  .li-prog{display:block;margin-top:6px;padding-left:10px;border-left:2px solid var(--grid);
+           color:var(--ink2);font-size:12px;line-height:1.6}
+  .li-prog span{display:block;white-space:pre-wrap;overflow-wrap:anywhere}
   /* calendar */
   .calbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
   .calbar .mon{font-size:17px;font-weight:700;min-width:126px;font-variant-numeric:tabular-nums}
@@ -1223,18 +1226,63 @@ function cellText(c){
   }
   return String(v);
 }
+/* 열 순서가 양식과 달라도(예: 최근수행일 열이 없는 탭) 머리글 이름으로 찾아 맞춘다.
+   이름으로 못 맞추는 시트만 기존의 '열 순서' 방식으로 되돌아간다. */
+const LABEL_RULES = [
+  ["parentId", [/부모\s*id/i, /상위\s*id/i]],
+  ["cat",      [/업무\s*구분/, /요청\s*분류/, /대분류/, /^분류/]],
+  ["reqType",  [/요청\s*구분/]],
+  ["reqDate",  [/요청\s*일/]],
+  ["org",      [/요청\s*기관/, /기관/]],
+  ["owner",    [/담당/]],
+  ["cycle",    [/반복\s*주기/, /^주기/]],
+  ["lastRun",  [/최근\s*수행/, /마지막\s*수행/]],
+  ["task",     [/태스크/, /업무명/, /할\s*일/, /제목/]],
+  ["detail",   [/상세/, /^내용/]],
+  ["prio",     [/우선/]],
+  ["status",   [/상태/]],
+  ["done",     [/처리\s*일자/, /완료\s*일/]],
+  ["due",      [/처리\s*예정/, /예정\s*일/, /마감/, /기한/]],
+  ["progress", [/진행\s*현황/, /변동\s*사항/, /^메모/, /^비고/]],
+  ["feedback", [/피드백/]],
+  ["id",       [/^id$/i, /업무\s*id/i, /^번호$/]]
+];
+let MAP_MODE = "pos";
+/* 머리글이 비어 있으면 gviz 가 A, B, … AA 같은 열 문자를 label 로 준다 */
+function colLetter(i){ let s = ""; i += 1;
+  while(i > 0){ const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); }
+  return s; }
+function mapByLabel(labels){
+  const map = {};
+  labels.forEach((raw, i) => {
+    const L = String(raw || "").trim();
+    if(!L || L === colLetter(i)) return;              /* 머리글 없는 빈 열은 건너뛴다 */
+    let field = null;
+    if(/처리/.test(L) && /예정/.test(L)) field = "due";  /* '처리예정일자/처리일자' 합본 */
+    if(!field) for(let j = 0; j < LABEL_RULES.length; j++){
+      if(LABEL_RULES[j][1].some(p => p.test(L))){ field = LABEL_RULES[j][0]; break; }
+    }
+    if(!field || map[field] != null) return;
+    map[field] = i;
+  });
+  return map;
+}
 function fromGviz(res){
   if(!res || res.status === "error" || !res.table) throw new Error("gviz error");
   const labels = (res.table.cols || []).map(c => (c && (c.label || c.id)) || "");
   const ver = VER === "auto" ? detectVersion(labels).ver : VER;
   VER_USED = ver;
-  const cols = SCHEMAS[ver].cols;
+  const lm = mapByLabel(labels);
+  const useLabel = lm.task != null && Object.keys(lm).length >= 5;
+  MAP_MODE = useLabel ? "label" : "pos";
+  const pairs = useLabel ? Object.keys(lm).map(k => [k, lm[k]])
+                         : SCHEMAS[ver].cols.map((k,i) => [k,i]);
   return res.table.rows.map(r => {
     const o = {};
     ALL_FIELDS.forEach(k => o[k] = "");
-    cols.forEach((k,i) => o[k] = (cellText(r.c && r.c[i]) || "").trim());
+    pairs.forEach(([k,i]) => o[k] = (cellText(r.c && r.c[i]) || "").trim());
     return o;
-  }).filter(o => cols.some(k => o[k]));
+  }).filter(o => pairs.some(([k]) => o[k]));
 }
 
 /* ---------- 날짜 ---------- */
@@ -2163,19 +2211,32 @@ function renderCalendar(){
     btn.onclick = () => { CAL.view = btn.dataset.v; CAL.sel = null; renderCalendar(); };
   });
 }
+/* 진행 현황 및 변동 사항 — 최근 기록부터 줄마다 → */
+function progBlock(r){
+  let lines = [];
+  memoEvents(r).slice().sort((a,b) => b.d - a.d).slice(0,2).forEach(e => {
+    if(e.head) lines.push(`[${md2(e.d)}] ${e.head}`);
+    e.sub.forEach(sv => lines.push(sv));
+  });
+  if(!lines.length && r.progress)
+    lines = r.progress.split("\n").map(x => x.trim()).filter(Boolean).slice(-3);
+  if(!lines.length && r.detail)
+    lines = r.detail.split("\n").map(x => x.trim()).filter(Boolean).slice(0,2);
+  lines = lines.slice(0,3);
+  if(!lines.length) return "";
+  return `<span class="li-prog">${lines.map(l => `<span>→ ${esc(l)}</span>`).join("")}</span>`;
+}
 function showDay(d, evs){
   document.getElementById("calDayTitle").textContent =
     `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()} (${WD[d.getDay()]}) · ${evs.length}건`;
   const el = document.getElementById("calDayList");
   if(!evs.length){ el.innerHTML = `<li class="empty">해당 날짜에 항목이 없습니다.</li>`; return; }
-  el.innerHTML = evs.map(({r,k}) => {
-    const line = (r.progress || r.detail || "").split("\n").filter(Boolean).slice(-1)[0] || "";
-    return `<li data-no="${r.no}" style="cursor:pointer">
+  el.innerHTML = evs.map(({r,k}) => `<li data-no="${r.no}" style="cursor:pointer">
       <span class="risk-chip" style="background:${r.m.c};color:#fff"><span class="ico">${r.m.i}</span>${esc(r.statusL)}</span>
       <span class="li-body"><span class="li-title">${esc(r.task || "(제목 없음)")}</span>
       <span class="li-meta"><i style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${CAL_SRC[k].c}"></i>
-        ${CAL_SRC[k].n}${r.catL !== "미분류" ? " · " + esc(r.catL) : ""}${r.owner ? " · " + esc(r.owner) : ""}${line ? " · " + esc(line) : ""}</span></span></li>`;
-  }).join("");
+        ${CAL_SRC[k].n}${r.catL !== "미분류" ? " · " + esc(r.catL) : ""}${r.owner ? " · " + esc(r.owner) : ""}</span>
+      ${progBlock(r)}</span></li>`).join("");
   el.querySelectorAll("li[data-no]").forEach(li =>
     li.addEventListener("click", () => openDrawer(+li.dataset.no)));
 }
@@ -2576,7 +2637,8 @@ function verBadge(){
   const b = document.getElementById("verbadge");
   const auto = VER === "auto";
   b.innerHTML = `<span class="dot" style="background:${VER_USED === "v2" ? "var(--h-aqua)" : "var(--h-blue)"}"></span>` +
-    esc(SCHEMAS[VER_USED].label) + (auto ? " · 자동 감지" : " · 수동 지정");
+    esc(SCHEMAS[VER_USED].label) + (auto ? " · 자동 감지" : " · 수동 지정")
+    + (MAP_MODE === "label" ? " · 열 이름 매칭" : "");
   document.getElementById("verSel").value = VER;
 }
 function badge(txt, live){
